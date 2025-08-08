@@ -18,7 +18,7 @@ var (
 
 func init() {
 	// server 子命令参数
-	ServerCmd.Flags().StringVarP(&serverRootDir, "root", "r", "./files", "文件根目录")
+	ServerCmd.Flags().StringVarP(&serverRootDir, "dir", "d", "./", "文件根目录")
 	ServerCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "服务端口")
 }
 
