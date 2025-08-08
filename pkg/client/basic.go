@@ -18,7 +18,7 @@ func (c *Client) basicDownload(ctx context.Context) error {
 		return err
 	}
 	// 设置User-Agent
-	//req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

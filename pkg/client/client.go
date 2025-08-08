@@ -105,6 +105,9 @@ func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 		return 0, false, err
 	}
 
+	// 设置User-Agent
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return 0, false, err
@@ -136,6 +139,8 @@ func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 		return 0, false, fmt.Errorf("创建请求失败: %w", err)
 	}
 	req.Header.Set("Range", "bytes=0-0") // 请求第一个字节
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
+
 	resp2, err := c.httpClient.Do(req)
 	if err != nil {
 		return 0, false, fmt.Errorf("Range请求失败: %w", err)

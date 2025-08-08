@@ -45,6 +45,9 @@ func (c *Client) downloadChunkOnce(ctx context.Context, file *os.File, chunk Chu
 		return err
 	}
 
+	// 设置User-Agent
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
+
 	// 设置Range头
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", chunk.Start, chunk.End)
 	req.Header.Set("Range", rangeHeader)
