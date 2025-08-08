@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,7 +28,7 @@ var (
 func init() {
 	// client 子命令参数
 	ClientCmd.Flags().StringVarP(&clientURL, "url", "u", "", "下载URL (必需)")
-	ClientCmd.Flags().StringVarP(&clientOutput, "output", "o", "", "输出文件路径 (必需)")
+	ClientCmd.Flags().StringVarP(&clientOutput, "output", "o", "", "输出文件路径")
 	ClientCmd.Flags().Int64VarP(&clientChunkSize, "chunk-size", "s", 1024*1024, "分片大小 (字节)")
 	ClientCmd.Flags().IntVarP(&clientConcurrency, "concurrency", "c", 1, "并发数")
 	ClientCmd.Flags().IntVarP(&clientRetryCount, "retry", "r", 3, "重试次数")
@@ -37,7 +38,6 @@ func init() {
 
 	// 标记必需参数
 	ClientCmd.MarkFlagRequired("url")
-	ClientCmd.MarkFlagRequired("output")
 }
 
 var ClientCmd = &cobra.Command{
@@ -45,6 +45,11 @@ var ClientCmd = &cobra.Command{
 	Short: "EZFT 客户端 - 下载文件",
 	Long:  "EZFT 客户端支持高性能并发下载，支持断点续传、多线程下载和进度显示。",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if clientOutput == "" {
+			urlParts := strings.Split(clientURL, "/")
+			clientOutput = "down/" + urlParts[len(urlParts)-1]
+		}
+
 		// 创建下载配置
 		config := &client.DownloadConfig{
 			URL:            clientURL,
