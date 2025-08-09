@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// client 子命令相关变量
+// client subcommand related variables
 var (
 	clientURL          string
 	clientOutput       string
@@ -26,31 +26,31 @@ var (
 )
 
 func init() {
-	// client 子命令参数
-	ClientCmd.Flags().StringVarP(&clientURL, "url", "u", "", "下载URL (必需)")
-	ClientCmd.Flags().StringVarP(&clientOutput, "output", "o", "", "输出文件路径")
-	ClientCmd.Flags().Int64VarP(&clientChunkSize, "chunk-size", "s", 1024*1024, "分片大小 (字节)")
-	ClientCmd.Flags().IntVarP(&clientConcurrency, "concurrency", "c", 1, "并发数")
-	ClientCmd.Flags().IntVarP(&clientRetryCount, "retry", "r", 3, "重试次数")
-	ClientCmd.Flags().BoolVar(&clientResume, "resume", true, "支持断点续传")
-	ClientCmd.Flags().BoolVar(&clientAutoChunk, "auto-chunk", true, "自动分片")
-	ClientCmd.Flags().BoolVarP(&clientShowProgress, "progress", "p", true, "显示下载进度")
+	// client subcommand parameters
+	ClientCmd.Flags().StringVarP(&clientURL, "url", "u", "", "Download URL (required)")
+	ClientCmd.Flags().StringVarP(&clientOutput, "output", "o", "", "Output file path")
+	ClientCmd.Flags().Int64VarP(&clientChunkSize, "chunk-size", "s", 1024*1024, "Chunk size (bytes)")
+	ClientCmd.Flags().IntVarP(&clientConcurrency, "concurrency", "c", 1, "Concurrency count")
+	ClientCmd.Flags().IntVarP(&clientRetryCount, "retry", "r", 3, "Retry count")
+	ClientCmd.Flags().BoolVar(&clientResume, "resume", true, "Support resume download")
+	ClientCmd.Flags().BoolVar(&clientAutoChunk, "auto-chunk", true, "Auto chunking")
+	ClientCmd.Flags().BoolVarP(&clientShowProgress, "progress", "p", true, "Show download progress")
 
-	// 标记必需参数
+	// Mark required parameters
 	ClientCmd.MarkFlagRequired("url")
 }
 
 var ClientCmd = &cobra.Command{
 	Use:   "client",
-	Short: "EZFT 客户端 - 下载文件",
-	Long:  "EZFT 客户端支持高性能并发下载，支持断点续传、多线程下载和进度显示。",
+	Short: "EZFT Client - Download files",
+	Long:  "EZFT client supports high-performance concurrent downloads, with resume download, multi-threaded download and progress display.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if clientOutput == "" {
 			urlParts := strings.Split(clientURL, "/")
 			clientOutput = "down/" + urlParts[len(urlParts)-1]
 		}
 
-		// 创建下载配置
+		// Create download configuration
 		config := &client.DownloadConfig{
 			URL:            clientURL,
 			OutputPath:     clientOutput,
@@ -61,10 +61,10 @@ var ClientCmd = &cobra.Command{
 			AutoChunk:      clientAutoChunk,
 		}
 
-		// 创建客户端
+		// Create client
 		downloadClient := client.NewClient(config)
 
-		// 设置信号处理
+		// Set signal handling
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
@@ -73,32 +73,32 @@ var ClientCmd = &cobra.Command{
 
 		go func() {
 			<-sigChan
-			fmt.Println("\n接收到中断信号，正在停止下载...")
+			fmt.Println("\nReceived interrupt signal, stopping download...")
 			cancel()
 		}()
 
 		startTime := time.Now()
 
-		// 启动进度显示
+		// Start progress display
 		if clientShowProgress {
 			go downloadClient.ShowProgressLoop(ctx)
 		}
 
-		// 执行下载
+		// Execute download
 		err := downloadClient.Download(ctx)
 		if err != nil {
-			return fmt.Errorf("下载失败: %w", err)
+			return fmt.Errorf("download failed: %w", err)
 		}
 
 		duration := time.Since(startTime)
-		fmt.Printf("\n✓ 下载完成！耗时: %v\n", duration)
+		fmt.Printf("\n✓ Download completed! Duration: %v\n", duration)
 
-		// 显示文件信息
+		// Display file information
 		if info, err := os.Stat(clientOutput); err == nil {
-			fmt.Printf("文件大小: %d bytes (%.2f MB)\n", info.Size(), float64(info.Size())/(1024*1024))
+			fmt.Printf("File size: %d bytes (%.2f MB)\n", info.Size(), float64(info.Size())/(1024*1024))
 			if duration > 0 {
 				speed := float64(info.Size()) / duration.Seconds() / (1024 * 1024)
-				fmt.Printf("平均速度: %.2f MB/s\n", speed)
+				fmt.Printf("Average speed: %.2f MB/s\n", speed)
 			}
 		}
 

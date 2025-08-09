@@ -10,14 +10,14 @@ import (
 	"path/filepath"
 )
 
-// basicDownload 下载整个文件
+// basicDownload downloads the entire file
 func (c *Client) basicDownload(ctx context.Context) error {
-	log.Println("开始下载整个文件")
+	log.Println("Starting whole file download")
 	req, err := http.NewRequestWithContext(ctx, "GET", c.config.URL, nil)
 	if err != nil {
 		return err
 	}
-	// 设置User-Agent
+	// Set User-Agent
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
 
 	resp, err := c.httpClient.Do(req)
@@ -27,27 +27,27 @@ func (c *Client) basicDownload(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("下载失败，状态码: %d", resp.StatusCode)
+		return fmt.Errorf("download failed, status code: %d", resp.StatusCode)
 	}
 
-	// 创建目录
+	// Create directory
 	if err := os.MkdirAll(filepath.Dir(c.config.OutputPath), 0755); err != nil {
-		return fmt.Errorf("创建目录失败: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// 创建或覆盖文件
+	// Create or overwrite file
 	flag := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 
 	file, err := os.OpenFile(c.config.OutputPath, flag, 0644)
 	if err != nil {
-		return fmt.Errorf("创建文件失败: %w", err)
+		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer file.Close()
 
-	// 使用进度显示的方式复制数据
+	// Copy data with progress display
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return fmt.Errorf("写入文件失败: %w", err)
+		return fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return nil

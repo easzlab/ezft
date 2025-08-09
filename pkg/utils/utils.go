@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// FormatBytes 格式化字节数为人类可读的格式
+// FormatBytes formats bytes to human readable format
 func FormatBytes(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
@@ -24,7 +24,7 @@ func FormatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// FormatDuration 格式化时间间隔
+// FormatDuration formats time duration
 func FormatDuration(d time.Duration) string {
 	if d < time.Second {
 		return fmt.Sprintf("%.0fms", float64(d)/float64(time.Millisecond))
@@ -38,7 +38,7 @@ func FormatDuration(d time.Duration) string {
 	return fmt.Sprintf("%.1fh", d.Hours())
 }
 
-// CalculateSpeed 计算传输速度
+// CalculateSpeed calculates transfer speed
 func CalculateSpeed(bytes int64, duration time.Duration) string {
 	if duration == 0 {
 		return "0 B/s"
@@ -47,13 +47,13 @@ func CalculateSpeed(bytes int64, duration time.Duration) string {
 	return FormatBytes(int64(speed)) + "/s"
 }
 
-// FileExists 检查文件是否存在
+// FileExists checks if file exists
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return !os.IsNotExist(err)
 }
 
-// CreateFileWithDirs 创建文件，如果目录不存在则创建目录
+// CreateFileWithDirs creates file, create directories if they don't exist
 func CreateFileWithDirs(filename string) (*os.File, error) {
 	dir := filepath.Dir(filename)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -62,7 +62,7 @@ func CreateFileWithDirs(filename string) (*os.File, error) {
 	return os.Create(filename)
 }
 
-// GetFileSize 获取文件大小
+// GetFileSize gets file size
 func GetFileSize(filename string) (int64, error) {
 	info, err := os.Stat(filename)
 	if err != nil {
@@ -71,7 +71,7 @@ func GetFileSize(filename string) (int64, error) {
 	return info.Size(), nil
 }
 
-// CalculateFileMD5 计算文件的MD5哈希值
+// CalculateFileMD5 calculates MD5 hash of file
 func CalculateFileMD5(filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -87,9 +87,9 @@ func CalculateFileMD5(filename string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-// SanitizeFilename 清理文件名，移除不安全的字符
+// SanitizeFilename cleans filename, removes unsafe characters
 func SanitizeFilename(filename string) string {
-	// 移除路径分隔符和其他不安全字符
+	// Remove path separators and other unsafe characters
 	unsafe := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
 	result := filename
 	for _, char := range unsafe {
@@ -98,7 +98,7 @@ func SanitizeFilename(filename string) string {
 	return result
 }
 
-// EnsureDir 确保目录存在，如果不存在则创建
+// EnsureDir ensures directory exists, create if it doesn't exist
 func EnsureDir(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return os.MkdirAll(dir, 0755)
@@ -106,7 +106,7 @@ func EnsureDir(dir string) error {
 	return nil
 }
 
-// ProgressBar 进度条结构
+// ProgressBar progress bar structure
 type ProgressBar struct {
 	total   int64
 	current int64
@@ -114,7 +114,7 @@ type ProgressBar struct {
 	start   time.Time
 }
 
-// NewProgressBar 创建新的进度条
+// NewProgressBar creates new progress bar
 func NewProgressBar(total int64, width int) *ProgressBar {
 	return &ProgressBar{
 		total: total,
@@ -123,25 +123,25 @@ func NewProgressBar(total int64, width int) *ProgressBar {
 	}
 }
 
-// Update 更新进度
+// Update updates progress
 func (p *ProgressBar) Update(current int64) {
 	p.current = current
 }
 
-// String 返回进度条的字符串表示
+// String returns string representation of progress bar
 func (p *ProgressBar) String() string {
 	if p.total == 0 {
-		return "[未知大小]"
+		return "[Unknown size]"
 	}
 
 	percent := float64(p.current) / float64(p.total) * 100
 	filled := int(percent * float64(p.width) / 100)
-	
+
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", p.width-filled)
-	
+
 	elapsed := time.Since(p.start)
 	speed := CalculateSpeed(p.current, elapsed)
-	
+
 	return fmt.Sprintf("[%s] %.1f%% %s/%s %s",
 		bar,
 		percent,
@@ -150,7 +150,7 @@ func (p *ProgressBar) String() string {
 		speed)
 }
 
-// GetPercent 获取百分比
+// GetPercent gets percentage
 func (p *ProgressBar) GetPercent() float64 {
 	if p.total == 0 {
 		return 0
@@ -158,23 +158,23 @@ func (p *ProgressBar) GetPercent() float64 {
 	return float64(p.current) / float64(p.total) * 100
 }
 
-// IsComplete 检查是否完成
+// IsComplete checks if complete
 func (p *ProgressBar) IsComplete() bool {
 	return p.current >= p.total
 }
 
-// ETAString 获取预计剩余时间
+// ETAString gets estimated remaining time
 func (p *ProgressBar) ETAString() string {
 	if p.current == 0 {
-		return "计算中..."
+		return "Calculating..."
 	}
 
 	elapsed := time.Since(p.start)
 	rate := float64(p.current) / elapsed.Seconds()
 	remaining := p.total - p.current
-	
+
 	if rate == 0 {
-		return "未知"
+		return "Unknown"
 	}
 
 	eta := time.Duration(float64(remaining)/rate) * time.Second

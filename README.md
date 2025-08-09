@@ -1,85 +1,85 @@
-# EZFT - 高性能文件下载程序
+# EZFT - High-Performance File Download Program
 
-EZFT (Easy File Transfer) 是一个用 Go 语言实现的高性能文件下载程序，支持客户端和服务端，具有断点续传、并发下载等特性。
+EZFT (Easy File Transfer) is a high-performance file download program implemented in Go, supporting both client and server functionality with features like resume download and concurrent downloading.
 
-## 功能特性
+## Features
 
-✅ **客户端和服务端** - 同时提供文件下载服务端和下载客户端  
-✅ **断点续传** - 支持HTTP Range请求，可从中断处继续下载  
-✅ **并发下载** - 单次下载支持多个goroutine并发处理  
-✅ **高性能** - 针对大文件优化，使用分片下载和流式传输  
-✅ **完善测试** - 包含全面的单元测试、集成测试和基准测试  
+✅ **Client and Server** - Provides both file download server and download client  
+✅ **Resume Download** - Supports HTTP Range requests, can continue download from interruption point  
+✅ **Concurrent Download** - Single download supports multiple goroutines for concurrent processing  
+✅ **High Performance** - Optimized for large files, uses chunked download and streaming transfer  
+✅ **Comprehensive Testing** - Includes comprehensive unit tests, integration tests and benchmark tests  
 
-## 项目结构
+## Project Structure
 
 ```
 ezft/
 ├── cmd/
-│   ├── server/main.go          # 服务端可执行程序
-│   └── client/main.go          # 客户端可执行程序
+│   ├── server/main.go          # Server executable program
+│   └── client/main.go          # Client executable program
 ├── pkg/
 │   ├── server/
-│   │   ├── server.go           # 服务端核心逻辑
-│   │   └── server_test.go      # 服务端测试
+│   │   ├── server.go           # Server core logic
+│   │   └── server_test.go      # Server tests
 │   └── client/
-│       ├── client.go           # 客户端核心逻辑
-│       └── client_test.go      # 客户端测试
+│       ├── client.go           # Client core logic
+│       └── client_test.go      # Client tests
 ├── internal/
 │   └── utils/
-│       ├── utils.go            # 工具函数
-│       └── utils_test.go       # 工具函数测试
+│       ├── utils.go            # Utility functions
+│       └── utils_test.go       # Utility function tests
 ├── go.mod
 └── README.md
 ```
 
-## 安装和使用
+## Installation and Usage
 
-### 前置要求
+### Prerequisites
 
-- Go 1.20 或更高版本
+- Go 1.20 or higher
 
-### 构建项目
+### Build Project
 
 ```bash
-# 克隆项目
+# Clone project
 git clone <repository-url>
 cd ezft
 
-# 下载依赖
+# Download dependencies
 go mod tidy
 
-# 构建服务端
+# Build server
 go build -o bin/ezft-server ./cmd/server
 
-# 构建客户端
+# Build client
 go build -o bin/ezft-client ./cmd/client
 ```
 
-### 运行服务端
+### Run Server
 
 ```bash
-# 使用默认配置启动服务端
+# Start server with default configuration
 ./bin/ezft-server
 
-# 自定义配置
+# Custom configuration
 ./bin/ezft-server -root ./files -port 9000
 
-# 查看帮助
+# View help
 ./bin/ezft-server -help
 ```
 
-服务端启动后，会在指定端口提供以下接口：
-- `GET /download/<文件路径>` - 下载文件（支持Range请求）
-- `GET /info/<文件路径>` - 获取文件信息
-- `GET /health` - 健康检查
+After server starts, it will provide the following interfaces on the specified port:
+- `GET /download/<file-path>` - Download file (supports Range requests)
+- `GET /info/<file-path>` - Get file information
+- `GET /health` - Health check
 
-### 运行客户端
+### Run Client
 
 ```bash
-# 基本下载
+# Basic download
 ./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
 
-# 自定义配置
+# Custom configuration
 ./bin/ezft-client \
   -url http://localhost:8080/download/large-file.bin \
   -output ./large-file.bin \
@@ -87,112 +87,112 @@ go build -o bin/ezft-client ./cmd/client
   -concurrency 8 \
   -timeout 60s
 
-# 禁用断点续传
+# Disable resume download
 ./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip -no-resume
 
-# 查看帮助
+# View help
 ./bin/ezft-client -help
 ```
 
-### 运行测试
+### Run Tests
 
 ```bash
-# 运行所有测试
+# Run all tests
 go test ./...
 
-# 运行特定包的测试
+# Run tests for specific package
 go test ./pkg/server
 go test ./pkg/client
 go test ./internal/utils
 
-# 运行基准测试
+# Run benchmark tests
 go test -bench=. ./...
 
-# 查看测试覆盖率
+# View test coverage
 go test -cover ./...
 ```
 
-## 核心技术特性
+## Core Technical Features
 
-### 服务端特性
+### Server Features
 
-- **HTTP Range支持**: 完整支持HTTP Range请求规范
-- **安全控制**: 防止路径遍历攻击，安全的文件访问控制
-- **文件信息API**: 提供文件大小、修改时间等信息查询
-- **高并发**: 支持多客户端同时下载
+- **HTTP Range Support**: Full support for HTTP Range request specification
+- **Security Control**: Prevents path traversal attacks, secure file access control
+- **File Information API**: Provides file size, modification time and other information queries
+- **High Concurrency**: Supports multiple clients downloading simultaneously
 
-### 客户端特性
+### Client Features
 
-- **智能分片**: 根据文件大小自动计算最优分片策略
-- **并发下载**: 多个goroutine并发下载不同分片
-- **断点续传**: 自动检测已下载部分，从断点继续下载
-- **重试机制**: 内置重试逻辑，提高下载成功率
-- **进度显示**: 实时显示下载进度和速度
+- **Smart Chunking**: Automatically calculates optimal chunking strategy based on file size
+- **Concurrent Download**: Multiple goroutines download different chunks concurrently
+- **Resume Download**: Automatically detects downloaded parts, continues from breakpoint
+- **Retry Mechanism**: Built-in retry logic improves download success rate
+- **Progress Display**: Real-time display of download progress and speed
 
-### 性能优化
+### Performance Optimization
 
-- **流式传输**: 避免大文件内存占用
-- **分片下载**: 将大文件分割为小块并发下载
-- **连接复用**: 高效的HTTP连接管理
-- **内存控制**: 合理的缓冲区大小控制
+- **Streaming Transfer**: Avoids large file memory usage
+- **Chunked Download**: Splits large files into small blocks for concurrent download
+- **Connection Reuse**: Efficient HTTP connection management
+- **Memory Control**: Reasonable buffer size control
 
-## API文档
+## API Documentation
 
-### 服务端API
+### Server API
 
-#### 下载文件
+#### Download File
 ```
-GET /download/<文件路径>
+GET /download/<file-path>
 Headers:
-  Range: bytes=<start>-<end> (可选，用于断点续传)
+  Range: bytes=<start>-<end> (optional, for resume download)
 ```
 
-#### 获取文件信息
+#### Get File Information
 ```
-GET /info/<文件路径>
+GET /info/<file-path>
 Response: {
-  "name": "文件名",
-  "size": 文件大小,
-  "modified": "修改时间"
+  "name": "filename",
+  "size": file_size,
+  "modified": "modification_time"
 }
 ```
 
-#### 健康检查
+#### Health Check
 ```
 GET /health
 Response: {
   "status": "ok",
-  "timestamp": "当前时间"
+  "timestamp": "current_time"
 }
 ```
 
-## 配置选项
+## Configuration Options
 
-### 服务端配置
+### Server Configuration
 
-- `-root`: 文件根目录 (默认: ./files)
-- `-port`: 服务端口 (默认: 8080)
+- `-root`: File root directory (default: ./files)
+- `-port`: Service port (default: 8080)
 
-### 客户端配置
+### Client Configuration
 
-- `-url`: 下载URL (必需)
-- `-output`: 输出文件路径 (必需)
-- `-chunk-size`: 分片大小，字节 (默认: 1048576 = 1MB)
-- `-concurrency`: 并发数 (默认: 4)
-- `-timeout`: 超时时间 (默认: 30s)
-- `-retry`: 重试次数 (默认: 3)
-- `-no-resume`: 禁用断点续传 (默认: false)
-- `-progress`: 显示下载进度 (默认: true)
+- `-url`: Download URL (required)
+- `-output`: Output file path (required)
+- `-chunk-size`: Chunk size in bytes (default: 1048576 = 1MB)
+- `-concurrency`: Concurrency count (default: 4)
+- `-timeout`: Timeout duration (default: 30s)
+- `-retry`: Retry count (default: 3)
+- `-no-resume`: Disable resume download (default: false)
+- `-progress`: Show download progress (default: true)
 
-## 使用示例
+## Usage Examples
 
-### 场景1: 大文件下载
+### Scenario 1: Large File Download
 
 ```bash
-# 启动服务端
+# Start server
 ./bin/ezft-server -root /path/to/files -port 8080
 
-# 客户端下载大文件，使用8个并发，2MB分片
+# Client downloads large file with 8 concurrent connections and 2MB chunks
 ./bin/ezft-client \
   -url http://localhost:8080/download/large-video.mp4 \
   -output ./large-video.mp4 \
@@ -200,56 +200,56 @@ Response: {
   -concurrency 8
 ```
 
-### 场景2: 断点续传
+### Scenario 2: Resume Download
 
 ```bash
-# 第一次下载（可能中断）
+# First download (may be interrupted)
 ./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
 
-# 第二次下载（自动从断点继续）
+# Second download (automatically continues from breakpoint)
 ./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
 ```
 
-## 测试覆盖
+## Test Coverage
 
-项目包含完善的测试套件：
+The project includes comprehensive test suites:
 
-- **单元测试**: 覆盖所有核心函数和方法
-- **集成测试**: 测试客户端和服务端的完整交互
-- **基准测试**: 性能测试和优化验证
-- **边界测试**: 错误处理和异常情况测试
+- **Unit Tests**: Cover all core functions and methods
+- **Integration Tests**: Test complete interaction between client and server
+- **Benchmark Tests**: Performance testing and optimization verification
+- **Boundary Tests**: Error handling and exception scenario testing
 
-## 性能指标
+## Performance Metrics
 
-在测试环境中的性能表现：
+Performance in test environment:
 
-- **并发能力**: 支持数百个并发下载连接
-- **大文件处理**: 高效处理GB级别文件
-- **内存使用**: 恒定内存占用，不随文件大小增长
-- **网络利用率**: 充分利用可用带宽
+- **Concurrency Capability**: Supports hundreds of concurrent download connections
+- **Large File Processing**: Efficiently handles GB-level files
+- **Memory Usage**: Constant memory usage, doesn't grow with file size
+- **Network Utilization**: Fully utilizes available bandwidth
 
-## 故障排除
+## Troubleshooting
 
-### 常见问题
+### Common Issues
 
-1. **连接超时**: 检查网络连接和服务端状态
-2. **权限错误**: 确保有文件读写权限
-3. **端口占用**: 更换服务端口或停止占用进程
-4. **文件不存在**: 检查文件路径和服务端根目录配置
+1. **Connection Timeout**: Check network connection and server status
+2. **Permission Error**: Ensure file read/write permissions
+3. **Port Occupied**: Change server port or stop occupying process
+4. **File Not Found**: Check file path and server root directory configuration
 
-### 调试模式
+### Debug Mode
 
-可以通过环境变量启用详细日志：
+Enable verbose logging through environment variable:
 
 ```bash
 export EZFT_DEBUG=1
 ./bin/ezft-client [options]
 ```
 
-## 许可证
+## License
 
-本项目采用 MIT 许可证。
+This project is licensed under the MIT License.
 
-## 贡献
+## Contribution
 
-欢迎提交 Issue 和 Pull Request 来改进项目。
+Welcome submit Issue and Pull Request to improve project.

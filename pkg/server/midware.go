@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// responseWriter 包装原始的 ResponseWriter 以捕获响应信息
+// responseWriter wraps the original ResponseWriter to capture response information
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode   int
@@ -24,22 +24,22 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-// 日志中间件
+// Logging middleware
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// 创建自定义的 ResponseWriter 来捕获响应信息
+		// Create custom ResponseWriter to capture response information
 		rw := &responseWriter{
 			ResponseWriter: w,
-			statusCode:     200, // 默认状态码
+			statusCode:     200, // default status code
 			responseSize:   0,
 		}
 
-		// 调用下一个处理器
+		// Call the next handler
 		next.ServeHTTP(rw, r)
 
-		// 获取请求信息
+		// Get request information
 		duration := time.Since(start)
 		userAgent := r.Header.Get("User-Agent")
 		referer := r.Header.Get("Referer")
@@ -48,12 +48,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			contentLength = 0
 		}
 
-		// 记录详细日志
+		// Log detailed information
 		log.Printf("[%s] %s %s %s - Status: %d - ReqSize: %d bytes - RespSize: %d bytes - Duration: %v - UserAgent: %q - Referer: %q",
 			start.Format("2006-01-02 15:04:05"),
 			r.RemoteAddr,
 			r.Method,
-			r.URL.RequestURI(), // 使用 RequestURI 包含查询参数
+			r.URL.RequestURI(), // Use RequestURI to include query parameters
 			rw.statusCode,
 			contentLength,
 			rw.responseSize,
@@ -64,25 +64,25 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// 认证中间件
+// Authentication middleware
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 从请求头中获取Basic Auth认证信息
+		// Get Basic Auth credentials from request headers
 		username, password, ok := r.BasicAuth()
 		if !ok {
-			// 如果没有提供认证信息，则要求认证
+			// If no authentication information is provided, require authentication
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		// 检查用户名和密码（这里使用硬编码，实际应用中应从安全存储中获取）
+		// Check username and password (hardcoded here, should be retrieved from secure storage in production)
 		if username != "admin" || password != "password" {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 
-		// 认证通过，调用下一个处理器
+		// Authentication passed, call the next handler
 		next.ServeHTTP(w, r)
 	})
 }

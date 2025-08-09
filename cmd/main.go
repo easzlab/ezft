@@ -10,22 +10,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// 版本信息变量
 var showVersion bool
 
 func init() {
-	// 添加版本标志到根命令
-	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "显示版本信息")
+	// Add version flag to root command
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Show version information")
 
-	// 将子命令添加到根命令
+	// Add subcommands to root command
 	rootCmd.AddCommand(client.ClientCmd)
 	rootCmd.AddCommand(server.ServerCmd)
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "ezft",
-	Short: "EZFT 高性能文件传输工具",
-	Long:  "EZFT (Easy File Transfer) 是一个高性能的文件传输工具，支持客户端下载和服务器功能。",
+	Short: "EZFT high-performance file transfer tool",
+	Long:  "EZFT (Easy File Transfer) is a high-performance file transfer tool that supports client download and server functionality.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if showVersion {
 			fmt.Println(config.FullVersion())

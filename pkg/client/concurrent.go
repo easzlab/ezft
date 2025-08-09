@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-// downloadChunksConcurrently 并发下载分片
+// downloadChunksConcurrently downloads chunks concurrently
 func (c *Client) downloadChunksConcurrently(ctx context.Context, file *os.File, chunks []Chunk) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(chunks))
 	semaphore := make(chan struct{}, c.config.MaxConcurrency)
 
-	// 用于收集失败的分片
+	// Used to collect failed chunks
 	var failedChunksMutex sync.Mutex
 	var failedChunks []Chunk
 
 	for _, chunk := range chunks {
-		// 控制并发数
+		// Control concurrency
 		semaphore <- struct{}{}
 		wg.Add(1)
 
@@ -29,45 +29,45 @@ func (c *Client) downloadChunksConcurrently(ctx context.Context, file *os.File, 
 			}()
 
 			if err := c.downloadChunk(ctx, file, ck); err != nil {
-				// 记录失败的分片
+				// Record failed chunk
 				failedChunksMutex.Lock()
 				failedChunks = append(failedChunks, ck)
 				failedChunksMutex.Unlock()
 
-				// 发送错误到channel
-				errChan <- fmt.Errorf("下载分片 %d 失败: %w", ck.Index, err)
+				// Send error to channel
+				errChan <- fmt.Errorf("failed to download chunk %d: %w", ck.Index, err)
 			}
 		}(chunk)
 	}
 
-	// 等待所有goroutine完成
+	// Wait for all goroutines to complete
 	wg.Wait()
 
-	// 关闭错误channel
+	// Close error channel
 	close(errChan)
 
-	// 收集所有错误
+	// Collect all errors
 	var errors []error
 	for err := range errChan {
 		errors = append(errors, err)
 	}
 
-	// 如果有失败的分片，保存记录
+	// If there are failed chunks, save record
 	if len(failedChunks) > 0 {
 		if err := c.saveFailedChunks(failedChunks); err != nil {
-			return fmt.Errorf("保存失败分片记录失败: %w", err)
+			return fmt.Errorf("failed to save failed chunks record: %w", err)
 		}
 	}
 
-	// 如果有错误，返回第一个错误
+	// If there are errors, return the first error
 	if len(errors) > 0 {
 		return errors[0]
 	}
 
-	// 所有分片下载成功，删除失败分片记录文件
+	// All chunks downloaded successfully, delete failed chunks record file
 	if _, err := os.Stat(c.config.FailedChunksJason); err == nil {
 		if err := os.Remove(c.config.FailedChunksJason); err != nil {
-			return fmt.Errorf("删除失败分片记录文件失败: %w", err)
+			return fmt.Errorf("failed to delete failed chunks record file: %w", err)
 		}
 	}
 

@@ -6,13 +6,13 @@ import (
 	"net/http"
 )
 
-// Server 文件下载服务器
+// Server file download server
 type Server struct {
-	root string // 文件根目录
-	port int    // 服务端口
+	root string // File root directory
+	port int    // Service port
 }
 
-// NewServer 创建新的文件服务器
+// NewServer creates a new file server
 func NewServer(root string, port int) *Server {
 	return &Server{
 		root: root,
@@ -20,7 +20,7 @@ func NewServer(root string, port int) *Server {
 	}
 }
 
-// Start 启动服务器
+// Start starts the server
 func (s *Server) Start() error {
 	fs := http.FileServer(http.Dir(s.root))
 

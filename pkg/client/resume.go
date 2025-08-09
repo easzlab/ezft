@@ -7,40 +7,40 @@ import (
 	"path/filepath"
 )
 
-// downloadWithResume 使用断点续传下载
+// downloadWithResume downloads using resume functionality
 func (c *Client) downloadWithResume(ctx context.Context, fileSize int64) error {
-	// 创建目录
+	// Create directory
 	if err := os.MkdirAll(filepath.Dir(c.config.OutputPath), 0755); err != nil {
-		return fmt.Errorf("创建目录失败: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// 打开文件进行写入，使用O_RDWR以支持断点续传
+	// Open file for writing, use O_RDWR to support resume download
 	file, err := os.OpenFile(c.config.OutputPath, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("打开文件失败: %w", err)
+		return fmt.Errorf("failed to open file: %w", err)
 	}
 	defer file.Close()
 
-	// 读取失败分片记录
+	// Load failed chunks record
 	failedChunks, err := c.loadFailedChunks()
 	if err != nil {
-		return fmt.Errorf("加载失败分片记录失败: %w", err)
+		return fmt.Errorf("failed to load failed chunks record: %w", err)
 	}
 
-	// 下载失败分片
+	// Download failed chunks
 	if len(failedChunks) > 0 {
 		if err := c.downloadChunksSequentially(ctx, file, failedChunks); err != nil {
 			return err
 		}
 	}
 
-	// 更新文件实际大小
+	// Update actual file size
 	newExistingSize, err := c.getExistingFileSize()
 	if err != nil {
-		return fmt.Errorf("更新文件实际大小失败: %w", err)
+		return fmt.Errorf("failed to update actual file size: %w", err)
 	}
 
-	// 重新计算剩余分片
+	// Recalculate remaining chunks
 	remainingSize := fileSize - newExistingSize
 	if remainingSize <= 0 {
 		return nil
@@ -48,31 +48,31 @@ func (c *Client) downloadWithResume(ctx context.Context, fileSize int64) error {
 
 	chunks := c.calculateChunks(newExistingSize, fileSize)
 
-	fmt.Printf("开始断点续传，分片数: %d，已下载: %d bytes，剩余: %d bytes\n",
+	fmt.Printf("Starting resume download, chunks: %d, downloaded: %d bytes, remaining: %d bytes\n",
 		len(chunks), newExistingSize, remainingSize)
 
-	// 使用顺序下载剩余分片
+	// Use sequential download for remaining chunks
 	if c.config.MaxConcurrency < 2 {
 		return c.downloadChunksSequentially(ctx, file, chunks)
 	}
 
-	// 使用并发下载剩余分片
+	// Use concurrent download for remaining chunks
 	return c.downloadChunksConcurrently(ctx, file, chunks)
 }
 
-// downloadChunksSequentially 顺序下载分片
+// downloadChunksSequentially downloads chunks sequentially
 func (c *Client) downloadChunksSequentially(ctx context.Context, file *os.File, chunks []Chunk) error {
 	for _, chunk := range chunks {
 		if err := c.downloadChunk(ctx, file, chunk); err != nil {
-			// 记录失败分片
+			// Record failed chunk
 			c.saveFailedChunks([]Chunk{chunk})
 			return err
 		}
 	}
-	// 删除失败分片记录
+	// Delete failed chunks record
 	if _, err := os.Stat(c.config.FailedChunksJason); err == nil {
 		if err := os.Remove(c.config.FailedChunksJason); err != nil {
-			return fmt.Errorf("删除失败分片记录文件失败: %w", err)
+			return fmt.Errorf("failed to delete failed chunks record file: %w", err)
 		}
 	}
 	return nil

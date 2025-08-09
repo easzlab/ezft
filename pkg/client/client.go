@@ -12,36 +12,36 @@ import (
 	"time"
 )
 
-// DownloadConfig 下载配置
+// DownloadConfig download configuration
 type DownloadConfig struct {
-	URL               string // 下载URL
-	OutputPath        string // 输出文件路径
-	FailedChunksJason string // 失败分片记录文件
-	ChunkSize         int64  // 每个分片大小
-	FileSize          int64  // 待下载文件大小
-	MaxConcurrency    int    // 最大并发数
-	RetryCount        int    // 重试次数
-	EnableResume      bool   // 是否支持断点续传
-	AutoChunk         bool   // 是否自动分片，如果为true，则忽略 ChunkSize，自动计算分片大小
+	URL               string // Download URL
+	OutputPath        string // Output file path
+	FailedChunksJason string // Failed chunks record file
+	ChunkSize         int64  // Size of each chunk
+	FileSize          int64  // Size of file to download
+	MaxConcurrency    int    // Maximum concurrency
+	RetryCount        int    // Retry count
+	EnableResume      bool   // Whether to support resume download
+	AutoChunk         bool   // Whether to auto chunk, if true, ignore ChunkSize and auto calculate chunk size
 }
 
-// DefaultConfig 默认配置
+// DefaultConfig default configuration
 func DefaultConfig() *DownloadConfig {
 	return &DownloadConfig{
 		ChunkSize:      1024 * 1024, // 1MB
-		MaxConcurrency: 1,           // 最大并发
-		RetryCount:     3,           // 重试3次
-		EnableResume:   true,        // 支持断点续传
+		MaxConcurrency: 1,           // Maximum concurrency
+		RetryCount:     3,           // Retry 3 times
+		EnableResume:   true,        // Support resume download
 	}
 }
 
-// Client 下载客户端
+// Client download client
 type Client struct {
 	config     *DownloadConfig
 	httpClient *http.Client
 }
 
-// NewClient 创建新的下载客户端
+// NewClient creates a new download client
 func NewClient(config *DownloadConfig) *Client {
 	if config == nil {
 		config = DefaultConfig()
@@ -49,10 +49,10 @@ func NewClient(config *DownloadConfig) *Client {
 
 	transport := &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second, // 连接建立超时
+			Timeout:   5 * time.Second, // Connection establishment timeout
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
-		ResponseHeaderTimeout: 10 * time.Second, // 响应头超时
+		ResponseHeaderTimeout: 10 * time.Second, // Response header timeout
 	}
 
 	config.FailedChunksJason = config.OutputPath + ".failed_chunks.json"
@@ -65,47 +65,47 @@ func NewClient(config *DownloadConfig) *Client {
 	}
 }
 
-// Download 执行下载
+// Download executes download
 func (c *Client) Download(ctx context.Context) error {
-	// 获取文件信息
+	// Get file information
 	fileSize, supportsRange, err := c.getFileInfo(ctx)
 	if err != nil {
-		return fmt.Errorf("获取文件信息失败: %w", err)
+		return fmt.Errorf("failed to get file information: %w", err)
 	}
 	log.Printf("file size: %v, supportRange: %v", fileSize, supportsRange)
 
-	// 检查是否已存在部分下载的文件
+	// Check if partial download file already exists
 	existingSize, err := c.getExistingFileSize()
 	if err != nil {
-		return fmt.Errorf("检查现有文件失败: %w", err)
+		return fmt.Errorf("failed to check existing file: %w", err)
 	}
 
-	// 如果文件已经完整下载
+	// If file is already completely downloaded
 	if existingSize == fileSize {
-		fmt.Printf("文件已经完整下载: %s\n", c.config.OutputPath)
+		fmt.Printf("File already completely downloaded: %s\n", c.config.OutputPath)
 		return nil
 	}
 
-	// 确定下载策略
+	// Determine download strategy
 	if supportsRange && c.config.EnableResume {
-		fmt.Println("开始断点续传")
-		// 支持断点续传，使用分片下载
+		fmt.Println("Starting resume download")
+		// Support resume download, use chunked download
 		return c.downloadWithResume(ctx, fileSize)
 	}
 
-	// 基础下载，不支持并发，不支持续传
-	fmt.Println("开始下载整个文件")
+	// Basic download, no concurrency, no resume support
+	fmt.Println("Starting whole file download")
 	return c.basicDownload(ctx)
 }
 
-// getFileInfo 获取文件信息
+// getFileInfo gets file information
 func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, "HEAD", c.config.URL, nil)
 	if err != nil {
 		return 0, false, err
 	}
 
-	// 设置User-Agent
+	// Set User-Agent
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
 
 	resp, err := c.httpClient.Do(req)
@@ -115,39 +115,39 @@ func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, false, fmt.Errorf("服务器返回错误状态: %d", resp.StatusCode)
+		return 0, false, fmt.Errorf("server returned error status: %d", resp.StatusCode)
 	}
 
-	// 获取文件大小
+	// Get file size
 	contentLength := resp.Header.Get("Content-Length")
 	fileSize, err := strconv.ParseInt(contentLength, 10, 64)
 	if err != nil {
-		return 0, false, fmt.Errorf("无法解析文件大小: %s", contentLength)
+		return 0, false, fmt.Errorf("unable to parse file size: %s", contentLength)
 	}
 
 	c.config.FileSize = fileSize
 
-	// 方法1: 检查是否支持Range请求
+	// Method 1: Check if Range requests are supported
 	acceptRanges := resp.Header.Get("Accept-Ranges")
 	if strings.ToLower(acceptRanges) == "bytes" {
 		return fileSize, true, nil
 	}
 
-	// 方法2: 检查是否支持Range请求
+	// Method 2: Check if Range requests are supported
 	req, err = http.NewRequestWithContext(ctx, "GET", c.config.URL, nil)
 	if err != nil {
-		return 0, false, fmt.Errorf("创建请求失败: %w", err)
+		return 0, false, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Range", "bytes=0-0") // 请求第一个字节
+	req.Header.Set("Range", "bytes=0-0") // Request first byte
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
 
 	resp2, err := c.httpClient.Do(req)
 	if err != nil {
-		return 0, false, fmt.Errorf("Range请求失败: %w", err)
+		return 0, false, fmt.Errorf("Range request failed: %w", err)
 	}
 	defer resp2.Body.Close()
 
-	// 检查状态码是否为 206
+	// Check if status code is 206
 	if resp2.StatusCode == http.StatusPartialContent {
 		return fileSize, true, nil
 	}
@@ -155,7 +155,7 @@ func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 	return fileSize, false, nil
 }
 
-// getExistingFileSize 获取已存在文件的大小
+// getExistingFileSize gets the size of existing file
 func (c *Client) getExistingFileSize() (int64, error) {
 	info, err := os.Stat(c.config.OutputPath)
 	if os.IsNotExist(err) {
@@ -167,10 +167,10 @@ func (c *Client) getExistingFileSize() (int64, error) {
 	return info.Size(), nil
 }
 
-// GetProgress 获取下载进度
+// GetProgress gets download progress
 func (c *Client) GetProgress() (float64, error) {
 	if c.config.FileSize == 0 {
-		// 获取目标文件大小
+		// Get target file size
 		s, _, err := c.getFileInfo(context.Background())
 		if err != nil || s == 0 {
 			return 0, err
@@ -178,7 +178,7 @@ func (c *Client) GetProgress() (float64, error) {
 		c.config.FileSize = s
 	}
 
-	// 获取当前已下载大小
+	// Get current downloaded size
 	currentSize, err := c.getExistingFileSize()
 	if err != nil {
 		return 0, err
@@ -202,12 +202,12 @@ func (c *Client) ShowProgressLoop(ctx context.Context) {
 				continue
 			}
 
-			// 简单的进度条显示
+			// Simple progress bar display
 			barWidth := 50
 			filled := int(progress * float64(barWidth) / 100)
 			bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
 
-			fmt.Printf("\r下载进度: [%s] %.1f%%", bar, progress)
+			fmt.Printf("\rDownload progress: [%s] %.1f%%", bar, progress)
 		}
 	}
 }

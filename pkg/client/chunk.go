@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-// Chunk 表示一个下载分片
+// Chunk represents a download chunk
 type Chunk struct {
 	Index int64
 	Start int64
 	End   int64
 }
 
-// downloadChunk 下载单个分片
+// downloadChunk downloads a single chunk
 func (c *Client) downloadChunk(ctx context.Context, file *os.File, chunk Chunk) error {
 	for retry := 0; retry <= c.config.RetryCount; retry++ {
 		if err := c.downloadChunkOnce(ctx, file, chunk); err != nil {
@@ -25,7 +25,7 @@ func (c *Client) downloadChunk(ctx context.Context, file *os.File, chunk Chunk) 
 				return err
 			}
 
-			// 等待后重试
+			// Wait before retry
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -38,17 +38,17 @@ func (c *Client) downloadChunk(ctx context.Context, file *os.File, chunk Chunk) 
 	return nil
 }
 
-// downloadChunkOnce 执行一次分片下载
+// downloadChunkOnce executes one chunk download
 func (c *Client) downloadChunkOnce(ctx context.Context, file *os.File, chunk Chunk) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.config.URL, nil)
 	if err != nil {
 		return err
 	}
 
-	// 设置User-Agent
+	// Set User-Agent
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ezft/1.0)")
 
-	// 设置Range头
+	// Set Range header
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", chunk.Start, chunk.End)
 	req.Header.Set("Range", rangeHeader)
 
@@ -59,47 +59,47 @@ func (c *Client) downloadChunkOnce(ctx context.Context, file *os.File, chunk Chu
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusPartialContent {
-		return fmt.Errorf("服务器不支持Range请求，状态码: %d", resp.StatusCode)
+		return fmt.Errorf("server does not support Range requests, status code: %d", resp.StatusCode)
 	}
 
-	// 流式下载：使用缓冲区分批读取和写入
-	buffer := make([]byte, 32*1024) // 32KB 缓冲区
+	// Streaming download: use buffer for batch read and write
+	buffer := make([]byte, 32*1024) // 32KB buffer
 	currentOffset := chunk.Start
 
 	for {
-		// 检查context是否被取消
+		// Check if context is cancelled
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
 
-		// 读取数据到缓冲区
+		// Read data to buffer
 		n, err := resp.Body.Read(buffer)
 		if n > 0 {
-			// 确保不超出分片边界
+			// Ensure not exceeding chunk boundary
 			if currentOffset+int64(n) > chunk.End+1 {
 				n = int(chunk.End + 1 - currentOffset)
 			}
 
-			// 写入数据到指定位置
+			// Write data to specified position
 			_, writeErr := file.WriteAt(buffer[:n], currentOffset)
 			if writeErr != nil {
-				return fmt.Errorf("写入数据失败: %w", writeErr)
+				return fmt.Errorf("failed to write data: %w", writeErr)
 			}
 
 			currentOffset += int64(n)
 		}
 
-		// 检查是否读取完成
+		// Check if reading is complete
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("读取响应数据失败: %w", err)
+			return fmt.Errorf("failed to read response data: %w", err)
 		}
 
-		// 检查是否已达到分片结束位置
+		// Check if reached chunk end position
 		if currentOffset > chunk.End {
 			break
 		}
@@ -108,7 +108,7 @@ func (c *Client) downloadChunkOnce(ctx context.Context, file *os.File, chunk Chu
 	return nil
 }
 
-// calculateChunks 计算下载分片
+// calculateChunks calculates download chunks
 func (c *Client) calculateChunks(start, end int64) []Chunk {
 	var chunks []Chunk
 
@@ -125,7 +125,7 @@ func (c *Client) calculateChunks(start, end int64) []Chunk {
 			End:   i + chunkSize - 1,
 		}
 
-		// 确保不超出文件边界
+		// Ensure not exceeding file boundary
 		if chunk.End >= end {
 			chunk.End = end - 1
 		}
@@ -136,34 +136,34 @@ func (c *Client) calculateChunks(start, end int64) []Chunk {
 	return chunks
 }
 
-// loadFailedChunks 加载失败分片记录
+// loadFailedChunks loads failed chunks record
 func (c *Client) loadFailedChunks() ([]Chunk, error) {
 	var failedChunks []Chunk
 	if _, err := os.Stat(c.config.FailedChunksJason); err == nil {
 		data, err := os.ReadFile(c.config.FailedChunksJason)
 		if err != nil {
-			return nil, fmt.Errorf("读取失败分片记录文件失败: %w", err)
+			return nil, fmt.Errorf("failed to read failed chunks record file: %w", err)
 		}
 
 		if err := json.Unmarshal(data, &failedChunks); err != nil {
-			return nil, fmt.Errorf("解析失败分片记录文件失败: %w", err)
+			return nil, fmt.Errorf("failed to parse failed chunks record file: %w", err)
 		}
 	}
 
 	return failedChunks, nil
 }
 
-// saveFailedChunks 保存失败分片记录
+// saveFailedChunks saves failed chunks record
 func (c *Client) saveFailedChunks(chunks []Chunk) error {
 	data, err := json.Marshal(chunks)
 	if err != nil {
-		return fmt.Errorf("序列化失败分片记录失败: %w", err)
+		return fmt.Errorf("failed to serialize failed chunks record: %w", err)
 	}
 
 	return os.WriteFile(c.config.FailedChunksJason, data, 0644)
 }
 
-// 根据文件大小动态调整分片大小
+// Dynamically adjust chunk size based on file size
 func calculateChunkSize(totalSize int64) int64 {
 	switch {
 	case totalSize > 100*1024*1024*1024: // >100GB
