@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var version = "0.2.1"
+var version = "0.2.2"
 
 func FullVersion() string {
 	return version

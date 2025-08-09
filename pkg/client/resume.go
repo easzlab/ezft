@@ -65,11 +65,14 @@ func (c *Client) downloadChunksSequentially(ctx context.Context, file *os.File, 
 	for _, chunk := range chunks {
 		if err := c.downloadChunk(ctx, file, chunk); err != nil {
 			// Record failed chunk
-			c.saveFailedChunks([]Chunk{chunk})
+			if saveErr := c.saveFailedChunks([]Chunk{chunk}); saveErr != nil {
+				// Log the save error but still return the original download error
+				fmt.Printf("Warning: failed to save failed chunks: %v\n", saveErr)
+			}
 			return err
 		}
 	}
-	// Delete failed chunks record
+	// Delete failed chunks record after successful completion
 	if _, err := os.Stat(c.config.FailedChunksJason); err == nil {
 		if err := os.Remove(c.config.FailedChunksJason); err != nil {
 			return fmt.Errorf("failed to delete failed chunks record file: %w", err)

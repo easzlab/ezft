@@ -26,10 +26,12 @@ func (s *Server) Start() error {
 
 	handler := LoggingMiddleware(fs)
 
-	http.Handle("/", handler)
+	// Create a new ServeMux to avoid conflicts with global DefaultServeMux
+	mux := http.NewServeMux()
+	mux.Handle("/", handler)
 
 	log.Printf("Serving %s on HTTP port %v\n", s.root, s.port)
 
 	addr := fmt.Sprintf(":%d", s.port)
-	return http.ListenAndServe(addr, nil)
+	return http.ListenAndServe(addr, mux)
 }

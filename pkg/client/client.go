@@ -55,7 +55,10 @@ func NewClient(config *DownloadConfig) *Client {
 		ResponseHeaderTimeout: 10 * time.Second, // Response header timeout
 	}
 
-	config.FailedChunksJason = config.OutputPath + ".failed_chunks.json"
+	// Only set default FailedChunksJason if not already set
+	if config.FailedChunksJason == "" {
+		config.FailedChunksJason = config.OutputPath + ".failed_chunks.json"
+	}
 
 	return &Client{
 		config: config,
