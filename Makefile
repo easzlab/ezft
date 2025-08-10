@@ -37,37 +37,37 @@ help: ## show help
 build: ## build the binary
 	@echo "Building $(PROJECT_NAME) v$(VERSION)..."
 	@mkdir -p $(BUILD_DIR)
-	$(GO) build $(LDFLAGS) -o $(BINARY_PATH) $(MAIN_FILE)
+	CGO_ENABLED=0 $(GO) build $(LDFLAGS) -o $(BINARY_PATH) $(MAIN_FILE)
 	@echo "✓ Build completed: $(BINARY_PATH)"
 
 .PHONY: build-dev
 build-dev: ## build the binary with debug info
 	@echo "Building $(PROJECT_NAME) for development..."
 	@mkdir -p $(BUILD_DIR)
-	$(GO) build -race -o $(BINARY_PATH) $(MAIN_FILE)
+	CGO_ENABLED=0 $(GO) build -race -o $(BINARY_PATH) $(MAIN_FILE)
 	@echo "✓ Development build completed: $(BINARY_PATH)"
 
 .PHONY: build-linux
 build-linux: ## build the binary for Linux
 	@echo "Building for Linux..."
 	@mkdir -p $(BUILD_DIR)
-	GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_FILE)
-	GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 $(MAIN_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 $(MAIN_FILE)
 	@echo "✓ Linux build completed"
 
 .PHONY: build-windows
 build-windows: ## build the binary for Windows
 	@echo "Building for Windows..."
 	@mkdir -p $(BUILD_DIR)
-	GOOS=windows GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_FILE)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_FILE)
 	@echo "✓ Windows build completed"
 
 .PHONY: build-darwin
 build-darwin: ## build the binary for macOS
 	@echo "Building for macOS..."
 	@mkdir -p $(BUILD_DIR)
-	GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_FILE)
-	GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_FILE)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_FILE)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_FILE)
 	@echo "✓ macOS builds completed"
 
 .PHONY: build-all
