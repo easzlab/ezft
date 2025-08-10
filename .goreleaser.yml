@@ -1,0 +1,32 @@
+# .goreleaser.yml
+project_name: ezft
+
+# build settings 
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -extldflags -static -X github.com/easzlab/ezft/internal/config.Version={{.Version}}
+
+# archives settings
+archives:
+  - format: binary
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# checksum settings
+checksum:
+  name_template: '{{ .ProjectName }}_sha256_checksums.txt'
+  algorithm: sha256
+
+# release settings
+release:
+  github:
+    owner: gjmzj
+    name: ezft
