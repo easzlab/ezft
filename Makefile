@@ -1,153 +1,113 @@
-# EZFT - Easy File Transfer Makefile
+# EZFT - Easy File Transfer Tool Makefile
 
-# 变量定义
-buildARY_SERVER = build/ezft-server
-buildARY_CLIENT = build/ezft-client
-GO_FILES = $(shell find . -name "*.go" -type f)
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-LDFLAGS = -ldflags "-X main.version=$(VERSION)"
+# Project information
+PROJECT_NAME := ezft
+MODULE_NAME := github.com/easzlab/ezft
+BUILD_TIME := $(shell date +%Y-%m-%d\ %H:%M:%S)
+BUILD_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 
-# 默认目标
+# Build configuration
+BUILD_DIR := build
+MAIN_FILE := cmd/main.go
+BINARY_NAME := $(PROJECT_NAME)
+BINARY_PATH := $(BUILD_DIR)/$(BINARY_NAME)
+
+# Go configuration
+GO := go
+GOOS := $(shell go env GOOS)
+GOARCH := $(shell go env GOARCH)
+
+# Linker flags for version information
+LDFLAGS := -ldflags "-X '$(MODULE_NAME)/internal/config.BuildTime=$(BUILD_TIME)' \
+                     -X '$(MODULE_NAME)/internal/config.BuildCommit=$(BUILD_COMMIT)' \
+					 -X '$(MODULE_NAME)/internal/config.BuildBranch=$(BUILD_BRANCH)' \
+                     -s -w -extldflags -static"
+
+# Default target
 .PHONY: all
-all: build
+all: clean build
 
-# 创建build目录
-build:
-	mkdir -p build
-
-# 构建所有二进制文件
-.PHONY: build
-build: build $(buildARY_SERVER) $(buildARY_CLIENT)
-
-# 构建服务端
-$(buildARY_SERVER): $(GO_FILES) | build
-	go build $(LDFLAGS) -o $(buildARY_SERVER) ./cmd/server
-
-# 构建客户端
-$(buildARY_CLIENT): $(GO_FILES) | build
-	go build $(LDFLAGS) -o $(buildARY_CLIENT) ./cmd/client
-
-# 单独构建服务端
-.PHONY: server
-server: $(buildARY_SERVER)
-
-# 单独构建客户端
-.PHONY: client
-client: $(buildARY_CLIENT)
-
-# 运行测试
-.PHONY: test
-test:
-	go test -v ./...
-
-# 运行测试并显示覆盖率
-.PHONY: test-coverage
-test-coverage:
-	go test -v -cover ./...
-
-# 运行基准测试
-.PHONY: bench
-bench:
-	go test -bench=. ./...
-
-# 代码格式化
-.PHONY: fmt
-fmt:
-	go fmt ./...
-
-# 代码检查
-.PHONY: vet
-vet:
-	go vet ./...
-
-# 下载依赖
-.PHONY: deps
-deps:
-	go mod download
-	go mod tidy
-
-# 清理构建产物
-.PHONY: clean
-clean:
-	rm -rf build/
-	go clean
-
-# 安装到系统
-.PHONY: install
-install: build
-	cp $(buildARY_SERVER) /usr/local/build/
-	cp $(buildARY_CLIENT) /usr/local/build/
-
-# 卸载
-.PHONY: uninstall
-uninstall:
-	rm -f /usr/local/build/ezft-server
-	rm -f /usr/local/build/ezft-client
-
-# 交叉编译
-.PHONY: build-all
-build-all: clean
-	# Linux amd64
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-server-linux-amd64 ./cmd/server
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-client-linux-amd64 ./cmd/client
-	# Linux arm64
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o build/ezft-server-linux-arm64 ./cmd/server
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o build/ezft-client-linux-arm64 ./cmd/client
-	# macOS amd64
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-server-darwin-amd64 ./cmd/server
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-client-darwin-amd64 ./cmd/client
-	# macOS arm64
-	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o build/ezft-server-darwin-arm64 ./cmd/server
-	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o build/ezft-client-darwin-arm64 ./cmd/client
-	# Windows amd64
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-server-windows-amd64.exe ./cmd/server
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o build/ezft-client-windows-amd64.exe ./cmd/client
-
-# 运行服务端（开发模式）
-.PHONY: run-server
-run-server:
-	go run ./cmd/server -root ./files -port 8080
-
-# 运行客户端测试下载（需要先启动服务端）
-.PHONY: run-client-test
-run-client-test:
-	@echo "请确保服务端已启动，然后手动运行："
-	@echo "go run ./cmd/client -url http://localhost:8080/download/<文件名> -output <输出路径>"
-
-# 完整的检查流程
-.PHONY: check
-check: fmt vet test
-
-# 发布准备
-.PHONY: release
-release: check build-all
-
-# 显示帮助信息
 .PHONY: help
-help:
-	@echo "EZFT - Easy File Transfer"
-	@echo ""
-	@echo "可用目标:"
-	@echo "  build         - 构建服务端和客户端二进制文件"
-	@echo "  server        - 只构建服务端"
-	@echo "  client        - 只构建客户端"
-	@echo "  test          - 运行单元测试"
-	@echo "  test-coverage - 运行测试并显示覆盖率"
-	@echo "  bench         - 运行基准测试"
-	@echo "  fmt           - 格式化代码"
-	@echo "  vet           - 代码静态检查"
-	@echo "  deps          - 下载并整理依赖"
-	@echo "  clean         - 清理构建产物"
-	@echo "  install       - 安装到系统(/usr/local/build)"
-	@echo "  uninstall     - 从系统卸载"
-	@echo "  build-all     - 交叉编译所有平台版本"
-	@echo "  run-server    - 运行服务端(开发模式)"
-	@echo "  check         - 完整检查(fmt+vet+test)"
-	@echo "  release       - 发布准备(check+build-all)"
-	@echo "  help          - 显示此帮助信息"
-	@echo ""
-	@echo "示例:"
-	@echo "  make build               # 构建项目"
-	@echo "  make test               # 运行测试"
-	@echo "  make run-server         # 启动服务端"
-	@echo "  make install            # 安装到系统"
+help: ## show help
+	@echo "Available targets: "
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.PHONY: build
+build: ## build the binary
+	@echo "Building $(PROJECT_NAME) v$(VERSION)..."
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build $(LDFLAGS) -o $(BINARY_PATH) $(MAIN_FILE)
+	@echo "✓ Build completed: $(BINARY_PATH)"
+
+.PHONY: build-dev
+build-dev: ## build the binary with debug info
+	@echo "Building $(PROJECT_NAME) for development..."
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build -race -o $(BINARY_PATH) $(MAIN_FILE)
+	@echo "✓ Development build completed: $(BINARY_PATH)"
+
+.PHONY: build-linux
+build-linux: ## build the binary for Linux
+	@echo "Building for Linux..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_FILE)
+	GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 $(MAIN_FILE)
+	@echo "✓ Linux build completed"
+
+.PHONY: build-windows
+build-windows: ## build the binary for Windows
+	@echo "Building for Windows..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=windows GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_FILE)
+	@echo "✓ Windows build completed"
+
+.PHONY: build-darwin
+build-darwin: ## build the binary for macOS
+	@echo "Building for macOS..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_FILE)
+	GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_FILE)
+	@echo "✓ macOS builds completed"
+
+.PHONY: build-all
+build-all: build-linux build-windows build-darwin ## build the binary for all platforms
+	@echo "✓ All platform builds completed"
+
+.PHONY: test
+test: ## run tests
+	@echo "Running tests..."
+	$(GO) test -v ./...
+	@echo "✓ Tests completed"
+
+.PHONY: test-cov
+test-cov: ## run tests with coverage
+	@echo "Running tests with coverage..."
+	$(GO) test -v -coverprofile=coverage.out ./...
+	$(GO) tool cover -html=coverage.out -o coverage.html
+	@echo "✓ Coverage report generated: coverage.html"
+
+.PHONY: bench
+bench: ## run benchmarks
+	@echo "Running benchmarks..."
+	$(GO) test -bench=. -benchmem ./...
+
+.PHONY: deps
+deps: ## download dependencies
+	@echo "Downloading dependencies..."
+	$(GO) mod download
+	@echo "✓ Dependencies downloaded"
+
+.PHONY: clean
+clean: ## clean build artifacts
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@rm -f coverage.out coverage.html
+	@echo "✓ Clean completed"
+
+.PHONY: update
+update: ## update dependencies
+	@echo "Updating dependencies..."
+	@go get -u ./...
+	@go mod tidy
+	@echo "✓ Dependencies updated"

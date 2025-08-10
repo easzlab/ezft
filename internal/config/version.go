@@ -5,10 +5,15 @@ import (
 	"strings"
 )
 
-var version = "0.2.2"
+var (
+	BuildTime   string
+	BuildCommit string
+	BuildBranch string
+	Version     = "0.2.3"
+)
 
 func FullVersion() string {
-	return version
+	return Version
 }
 
 func getSubVersion(v string, position int) int64 {

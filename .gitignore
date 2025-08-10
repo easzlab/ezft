@@ -3,3 +3,6 @@ build/
 temp/
 
 down/
+
+coverage.out
+coverage.html

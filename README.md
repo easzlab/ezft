@@ -1,255 +1,195 @@
-# EZFT - High-Performance File Download Program
+# EZFT - Easy File Transfer
 
-EZFT (Easy File Transfer) is a high-performance file download program implemented in Go, supporting both client and server functionality with features like resume download and concurrent downloading.
+[![Go Version](https://img.shields.io/badge/Go-1.24.4-blue.svg)](https://golang.org/)
+[![Version](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/easzlab/ezft)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+EZFT (Easy File Transfer) is a high-performance file transfer tool written in Go that supports both client download and server functionality. It features concurrent downloads, resume capability, progress tracking, and efficient file serving.
 
 ## Features
 
-✅ **Client and Server** - Provides both file download server and download client  
-✅ **Resume Download** - Supports HTTP Range requests, can continue download from interruption point  
-✅ **Concurrent Download** - Single download supports multiple goroutines for concurrent processing  
-✅ **High Performance** - Optimized for large files, uses chunked download and streaming transfer  
-✅ **Comprehensive Testing** - Includes comprehensive unit tests, integration tests and benchmark tests  
+### Client Features
+- **High-Performance Concurrent Downloads**: Multi-threaded downloading with configurable concurrency
+- **Resume Download Support**: Automatic resume from interruption points
+- **Progress Tracking**: Real-time download progress display with visual progress bar
+- **Auto Chunking**: Intelligent chunk size calculation for optimal performance
+- **Retry Mechanism**: Configurable retry count for failed downloads
+- **Range Request Support**: Efficient partial content downloads
+- **Signal Handling**: Graceful interruption handling (Ctrl+C)
 
-## Project Structure
+### Server Features
+- **High-Performance File Server**: Efficient HTTP-based file serving
+- **Range Request Support**: Partial content delivery for resume downloads
+- **Multi-Client Support**: Concurrent client handling
+- **Logging Middleware**: Request logging and monitoring
+- **Directory Management**: Automatic directory creation and management
 
-```
-ezft/
-├── cmd/
-│   ├── server/main.go          # Server executable program
-│   └── client/main.go          # Client executable program
-├── pkg/
-│   ├── server/
-│   │   ├── server.go           # Server core logic
-│   │   └── server_test.go      # Server tests
-│   └── client/
-│       ├── client.go           # Client core logic
-│       └── client_test.go      # Client tests
-├── internal/
-│   └── utils/
-│       ├── utils.go            # Utility functions
-│       └── utils_test.go       # Utility function tests
-├── go.mod
-└── README.md
-```
+## Installation
 
-## Installation and Usage
-
-### Prerequisites
-
-- Go 1.20 or higher
-
-### Build Project
-
+### From Source
 ```bash
-# Clone project
-git clone <repository-url>
+git clone https://github.com/easzlab/ezft.git
 cd ezft
-
-# Download dependencies
-go mod tidy
-
-# Build server
-go build -o bin/ezft-server ./cmd/server
-
-# Build client
-go build -o bin/ezft-client ./cmd/client
+go build -o build/ezft cmd/main.go
 ```
 
-### Run Server
+### Using Go Install
+```bash
+go install github.com/easzlab/ezft@latest
+```
+
+## Usage
+
+### Server Mode
+
+Start a file server to serve files from a directory:
 
 ```bash
-# Start server with default configuration
-./bin/ezft-server
+# Start server on default port 8080 serving current directory
+./ezft server
 
-# Custom configuration
-./bin/ezft-server -root ./files -port 9000
+# Start server on custom port serving specific directory
+./ezft server --port 9000 --dir /path/to/files
 
-# View help
-./bin/ezft-server -help
+# Short form
+./ezft server -p 9000 -d /path/to/files
 ```
 
-After server starts, it will provide the following interfaces on the specified port:
-- `GET /download/<file-path>` - Download file (supports Range requests)
-- `GET /info/<file-path>` - Get file information
-- `GET /health` - Health check
+**Server Options:**
+- `--port, -p`: Server port (default: 8080)
+- `--dir, -d`: Root directory to serve files from (default: current directory)
 
-### Run Client
+### Client Mode
+
+Download files with high performance and resume capability:
 
 ```bash
 # Basic download
-./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
+./ezft client --url http://example.com/file.zip
 
-# Custom configuration
-./bin/ezft-client \
-  -url http://localhost:8080/download/large-file.bin \
-  -output ./large-file.bin \
-  -chunk-size 2097152 \
-  -concurrency 8 \
-  -timeout 60s
+# Download with custom output path
+./ezft client --url http://example.com/file.zip --output /path/to/save/file.zip
 
-# Disable resume download
-./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip -no-resume
+# High-performance concurrent download
+./ezft client --url http://example.com/file.zip --concurrency 8 --chunk-size 2097152
 
-# View help
-./bin/ezft-client -help
+# Download with custom settings
+./ezft client \
+  --url http://example.com/file.zip \
+  --output downloads/file.zip \
+  --concurrency 4 \
+  --chunk-size 1048576 \
+  --retry 5 \
+  --progress
 ```
 
-### Run Tests
+**Client Options:**
+- `--url, -u`: Download URL (required)
+- `--output, -o`: Output file path (default: down/filename)
+- `--concurrency, -c`: Number of concurrent connections (default: 1)
+- `--chunk-size, -s`: Chunk size in bytes (default: 1048576 = 1MB)
+- `--retry, -r`: Retry count for failed downloads (default: 3)
+- `--resume`: Enable resume download (default: true)
+- `--auto-chunk`: Enable automatic chunk size calculation (default: true)
+- `--progress, -p`: Show download progress (default: true)
+
+### Global Options
 
 ```bash
-# Run all tests
-go test ./...
+# Show version information
+./ezft --version
 
-# Run tests for specific package
-go test ./pkg/server
-go test ./pkg/client
-go test ./internal/utils
-
-# Run benchmark tests
-go test -bench=. ./...
-
-# View test coverage
-go test -cover ./...
+# Show help
+./ezft --help
+./ezft client --help
+./ezft server --help
 ```
 
-## Core Technical Features
+## Examples
 
-### Server Features
-
-- **HTTP Range Support**: Full support for HTTP Range request specification
-- **Security Control**: Prevents path traversal attacks, secure file access control
-- **File Information API**: Provides file size, modification time and other information queries
-- **High Concurrency**: Supports multiple clients downloading simultaneously
-
-### Client Features
-
-- **Smart Chunking**: Automatically calculates optimal chunking strategy based on file size
-- **Concurrent Download**: Multiple goroutines download different chunks concurrently
-- **Resume Download**: Automatically detects downloaded parts, continues from breakpoint
-- **Retry Mechanism**: Built-in retry logic improves download success rate
-- **Progress Display**: Real-time display of download progress and speed
-
-### Performance Optimization
-
-- **Streaming Transfer**: Avoids large file memory usage
-- **Chunked Download**: Splits large files into small blocks for concurrent download
-- **Connection Reuse**: Efficient HTTP connection management
-- **Memory Control**: Reasonable buffer size control
-
-## API Documentation
-
-### Server API
-
-#### Download File
-```
-GET /download/<file-path>
-Headers:
-  Range: bytes=<start>-<end> (optional, for resume download)
-```
-
-#### Get File Information
-```
-GET /info/<file-path>
-Response: {
-  "name": "filename",
-  "size": file_size,
-  "modified": "modification_time"
-}
-```
-
-#### Health Check
-```
-GET /health
-Response: {
-  "status": "ok",
-  "timestamp": "current_time"
-}
-```
-
-## Configuration Options
-
-### Server Configuration
-
-- `-root`: File root directory (default: ./files)
-- `-port`: Service port (default: 8080)
-
-### Client Configuration
-
-- `-url`: Download URL (required)
-- `-output`: Output file path (required)
-- `-chunk-size`: Chunk size in bytes (default: 1048576 = 1MB)
-- `-concurrency`: Concurrency count (default: 4)
-- `-timeout`: Timeout duration (default: 30s)
-- `-retry`: Retry count (default: 3)
-- `-no-resume`: Disable resume download (default: false)
-- `-progress`: Show download progress (default: true)
-
-## Usage Examples
-
-### Scenario 1: Large File Download
-
+### Example 1: Basic File Server
 ```bash
-# Start server
-./bin/ezft-server -root /path/to/files -port 8080
-
-# Client downloads large file with 8 concurrent connections and 2MB chunks
-./bin/ezft-client \
-  -url http://localhost:8080/download/large-video.mp4 \
-  -output ./large-video.mp4 \
-  -chunk-size 2097152 \
-  -concurrency 8
+# Start server serving files from /var/www/files on port 8080
+./ezft server --dir /var/www/files --port 8080
 ```
 
-### Scenario 2: Resume Download
-
+### Example 2: High-Performance Download
 ```bash
-# First download (may be interrupted)
-./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
-
-# Second download (automatically continues from breakpoint)
-./bin/ezft-client -url http://localhost:8080/download/file.zip -output ./file.zip
+# Download large file with 8 concurrent connections
+./ezft client \
+  --url http://localhost:8080/largefile.iso \
+  --concurrency 8 \
+  --chunk-size 2097152 \
+  --output downloads/largefile.iso
 ```
 
-## Test Coverage
-
-The project includes comprehensive test suites:
-
-- **Unit Tests**: Cover all core functions and methods
-- **Integration Tests**: Test complete interaction between client and server
-- **Benchmark Tests**: Performance testing and optimization verification
-- **Boundary Tests**: Error handling and exception scenario testing
-
-## Performance Metrics
-
-Performance in test environment:
-
-- **Concurrency Capability**: Supports hundreds of concurrent download connections
-- **Large File Processing**: Efficiently handles GB-level files
-- **Memory Usage**: Constant memory usage, doesn't grow with file size
-- **Network Utilization**: Fully utilizes available bandwidth
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Connection Timeout**: Check network connection and server status
-2. **Permission Error**: Ensure file read/write permissions
-3. **Port Occupied**: Change server port or stop occupying process
-4. **File Not Found**: Check file path and server root directory configuration
-
-### Debug Mode
-
-Enable verbose logging through environment variable:
-
+### Example 3: Resume Interrupted Download
 ```bash
-export EZFT_DEBUG=1
-./bin/ezft-client [options]
+# If download was interrupted, simply run the same command again
+# EZFT will automatically detect and resume from the last position
+./ezft client --url http://example.com/file.zip --output file.zip
 ```
+
+## Architecture
+
+### Project Structure
+```
+ezft/
+├── cmd/
+│   ├── main.go          # Main entry point
+│   ├── client/          # Client command implementation
+│   └── server/          # Server command implementation
+├── pkg/
+│   ├── client/          # Client core functionality
+│   │   ├── client.go    # Main client logic
+│   │   ├── basic.go     # Basic download
+│   │   ├── concurrent.go # Concurrent download
+│   │   ├── resume.go    # Resume functionality
+│   │   └── chunk.go     # Chunk management
+│   ├── server/          # Server core functionality
+│   │   ├── server.go    # HTTP server implementation
+│   │   └── midware.go   # Logging middleware
+│   └── utils/           # Utility functions
+├── internal/
+│   └── config/          # Configuration and version management
+└── tests/               # Test files
+```
+
+### Key Components
+
+1. **CLI Framework**: Built with Cobra for robust command-line interface
+2. **HTTP Client**: Custom HTTP client with timeout and connection management
+3. **Concurrent Downloads**: Goroutine-based concurrent chunk downloading
+4. **Resume Logic**: JSON-based failed chunk tracking and recovery
+5. **Progress Display**: Real-time progress bar with speed calculation
+6. **File Server**: HTTP-based file server with Range request support
+
+## Performance Features
+
+- **Concurrent Downloads**: Multiple goroutines download different chunks simultaneously
+- **Intelligent Chunking**: Automatic chunk size calculation based on file size
+- **Connection Pooling**: Efficient HTTP connection reuse
+- **Memory Efficient**: Streaming downloads without loading entire files into memory
+- **Resume Capability**: Failed chunk tracking and automatic recovery
+
+## Requirements
+
+- Go 1.24.4 or later
+- Network connectivity for downloads
+- Sufficient disk space for downloaded files
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contribution
+## Support
 
-Welcome submit Issue and Pull Request to improve project.
+If you encounter any issues or have questions, please open an issue on the [GitHub repository](https://github.com/easzlab/ezft/issues).
