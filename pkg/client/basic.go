@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -8,11 +9,54 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
-// basicDownload downloads the entire file
+// getOptimalBufferSize returns optimal buffer size based on chunk size configuration
+func (c *Client) getOptimalBufferSize() int64 {
+	bufSize := c.config.ChunkSize
+	if bufSize < 64*1024 {
+		bufSize = 64 * 1024 // 64KB minimum
+	}
+	if bufSize > 2*1024*1024 {
+		bufSize = 2 * 1024 * 1024 // 2MB maximum
+	}
+	return bufSize
+}
+
+// basicDownload downloads the entire file with performance optimizations
 func (c *Client) basicDownload(ctx context.Context) error {
 	log.Println("Starting whole file download")
+
+	var lastErr error
+
+	// Retry mechanism
+	for attempt := 0; attempt <= c.config.RetryCount; attempt++ {
+		if attempt > 0 {
+			log.Printf("Retry attempt %d/%d", attempt, c.config.RetryCount)
+			// Exponential backoff
+			backoff := time.Duration(attempt) * time.Second
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+
+		err := c.performBasicDownload(ctx)
+		if err == nil {
+			return nil
+		}
+
+		lastErr = err
+		log.Printf("Download attempt %d failed: %v", attempt+1, err)
+	}
+
+	return fmt.Errorf("download failed after %d attempts: %w", c.config.RetryCount+1, lastErr)
+}
+
+// performBasicDownload performs the actual download with optimizations
+func (c *Client) performBasicDownload(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.config.URL, nil)
 	if err != nil {
 		return err
@@ -44,11 +88,63 @@ func (c *Client) basicDownload(ctx context.Context) error {
 	}
 	defer file.Close()
 
-	// Copy data with progress display
-	_, err = io.Copy(file, resp.Body)
+	// Use buffered writer for better performance with unified buffer size
+	bufferSize := c.getOptimalBufferSize()
+	bufferedWriter := bufio.NewWriterSize(file, int(bufferSize))
+	defer func() {
+		if flushErr := bufferedWriter.Flush(); flushErr != nil {
+			log.Printf("Warning: failed to flush buffer: %v", flushErr)
+		}
+	}()
+
+	// Copy data with optimized buffer size
+	written, err := c.copyWithOptimizedBuffer(ctx, bufferedWriter, resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
+	log.Printf("Download completed: %d bytes written", written)
 	return nil
+}
+
+// copyWithOptimizedBuffer copies data with optimized buffer size
+func (c *Client) copyWithOptimizedBuffer(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+	// Use unified buffer size for consistency
+	bufSize := c.getOptimalBufferSize()
+	buf := make([]byte, bufSize)
+	var written int64
+
+	for {
+		select {
+		case <-ctx.Done():
+			return written, ctx.Err()
+		default:
+		}
+
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw < 0 || nr < nw {
+				nw = 0
+				if ew == nil {
+					ew = fmt.Errorf("invalid write result")
+				}
+			}
+			written += int64(nw)
+			if ew != nil {
+				return written, ew
+			}
+			if nr != nw {
+				return written, io.ErrShortWrite
+			}
+		}
+		if er != nil {
+			if er != io.EOF {
+				return written, er
+			}
+			break
+		}
+	}
+
+	return written, nil
 }

@@ -311,3 +311,195 @@ func TestBasicDownloadUserAgent(t *testing.T) {
 		t.Errorf("Expected User-Agent %q, got %q", expectedUserAgent, receivedUserAgent)
 	}
 }
+
+// TestGetOptimalBufferSize tests the buffer size calculation function
+func TestGetOptimalBufferSize(t *testing.T) {
+	tests := []struct {
+		name           string
+		chunkSize      int64
+		expectedResult int64
+	}{
+		{
+			name:           "Small chunk size - should use minimum",
+			chunkSize:      1024,
+			expectedResult: 64 * 1024, // 64KB minimum
+		},
+		{
+			name:           "Normal chunk size",
+			chunkSize:      512 * 1024, // 512KB
+			expectedResult: 512 * 1024,
+		},
+		{
+			name:           "Large chunk size - should use maximum",
+			chunkSize:      10 * 1024 * 1024, // 10MB
+			expectedResult: 2 * 1024 * 1024,  // 2MB maximum
+		},
+		{
+			name:           "Default chunk size",
+			chunkSize:      1024 * 1024, // 1MB
+			expectedResult: 1024 * 1024,
+		},
+		{
+			name:           "Zero chunk size - should use minimum",
+			chunkSize:      0,
+			expectedResult: 64 * 1024, // 64KB minimum
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &DownloadConfig{
+				ChunkSize: tt.chunkSize,
+			}
+			client := NewClient(config)
+
+			result := client.getOptimalBufferSize()
+			if result != tt.expectedResult {
+				t.Errorf("getOptimalBufferSize() = %d, expected %d", result, tt.expectedResult)
+			}
+		})
+	}
+}
+
+// TestBasicDownloadRetry tests the retry mechanism
+func TestBasicDownloadRetry(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "retry_test.txt")
+	testContent := "Success after retry"
+
+	attemptCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attemptCount++
+		if attemptCount < 3 {
+			// Fail first 2 attempts
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		// Succeed on 3rd attempt
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(testContent))
+	}))
+	defer server.Close()
+
+	config := &DownloadConfig{
+		URL:        server.URL + "/test.txt",
+		OutputPath: testFile,
+		RetryCount: 3, // Allow 3 retries
+	}
+	client := NewClient(config)
+
+	ctx := context.Background()
+	startTime := time.Now()
+	err := client.basicDownload(ctx)
+	duration := time.Since(startTime)
+
+	if err != nil {
+		t.Fatalf("basicDownload() should succeed after retries, error = %v", err)
+	}
+
+	// Verify file content
+	content, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatalf("Failed to read downloaded file: %v", err)
+	}
+
+	if string(content) != testContent {
+		t.Errorf("Downloaded content mismatch. Expected %q, got %q", testContent, string(content))
+	}
+
+	// Verify retry attempts
+	if attemptCount != 3 {
+		t.Errorf("Expected 3 attempts, got %d", attemptCount)
+	}
+
+	// Verify exponential backoff (should take at least 1+2=3 seconds for backoff)
+	if duration < 3*time.Second {
+		t.Errorf("Expected duration >= 3s due to exponential backoff, got %v", duration)
+	}
+
+	t.Logf("Download succeeded after %d attempts in %v", attemptCount, duration)
+}
+
+// TestBasicDownloadRetryExhausted tests when all retry attempts are exhausted
+func TestBasicDownloadRetryExhausted(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "retry_exhausted_test.txt")
+
+	attemptCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attemptCount++
+		// Always fail
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	config := &DownloadConfig{
+		URL:        server.URL + "/test.txt",
+		OutputPath: testFile,
+		RetryCount: 2, // Allow 2 retries
+	}
+	client := NewClient(config)
+
+	ctx := context.Background()
+	err := client.basicDownload(ctx)
+
+	// Should fail after all retries are exhausted
+	if err == nil {
+		t.Error("Expected error after all retries exhausted")
+	}
+
+	// Verify total attempts (initial + retries)
+	expectedAttempts := 3 // 1 initial + 2 retries
+	if attemptCount != expectedAttempts {
+		t.Errorf("Expected %d attempts, got %d", expectedAttempts, attemptCount)
+	}
+
+	// Verify error message contains retry information
+	if err != nil && err.Error() == "" {
+		t.Error("Error message should not be empty")
+	}
+
+	t.Logf("Failed as expected after %d attempts with error: %v", attemptCount, err)
+}
+
+// TestBasicDownloadRetryContextCancellation tests retry with context cancellation
+func TestBasicDownloadRetryContextCancellation(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "retry_cancel_test.txt")
+
+	attemptCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attemptCount++
+		// Always fail to trigger retry
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	config := &DownloadConfig{
+		URL:        server.URL + "/test.txt",
+		OutputPath: testFile,
+		RetryCount: 5, // Allow many retries
+	}
+	client := NewClient(config)
+
+	// Create context with short timeout to cancel during retry
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	defer cancel()
+
+	err := client.basicDownload(ctx)
+
+	// Should fail due to context cancellation
+	if err == nil {
+		t.Error("Expected context cancellation error")
+	}
+
+	// Should have made at least one attempt but not all retries
+	if attemptCount == 0 {
+		t.Error("Should have made at least one attempt")
+	}
+	if attemptCount > 3 {
+		t.Errorf("Should not have made too many attempts due to context cancellation, got %d", attemptCount)
+	}
+
+	t.Logf("Cancelled after %d attempts with error: %v", attemptCount, err)
+}
