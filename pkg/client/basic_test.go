@@ -40,9 +40,9 @@ func TestBasicDownload(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err != nil {
-		t.Fatalf("basicDownload() error = %v", err)
+		t.Fatalf("BasicDownload() error = %v", err)
 	}
 
 	// Verify file was created
@@ -77,7 +77,7 @@ func TestBasicDownloadServerError(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err == nil {
 		t.Error("Expected error for server error response")
 	}
@@ -104,7 +104,7 @@ func TestBasicDownloadNotFound(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err == nil {
 		t.Error("Expected error for 404 response")
 	}
@@ -132,7 +132,7 @@ func TestBasicDownloadContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err == nil {
 		t.Error("Expected context cancellation error")
 	}
@@ -156,9 +156,9 @@ func TestBasicDownloadCreateDirectory(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err != nil {
-		t.Fatalf("basicDownload() error = %v", err)
+		t.Fatalf("BasicDownload() error = %v", err)
 	}
 
 	// Verify directory was created
@@ -203,9 +203,9 @@ func TestBasicDownloadOverwriteExisting(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err = client.basicDownload(ctx)
+	err = client.BasicDownload(ctx)
 	if err != nil {
-		t.Fatalf("basicDownload() error = %v", err)
+		t.Fatalf("BasicDownload() error = %v", err)
 	}
 
 	// Verify file was overwritten
@@ -244,11 +244,11 @@ func TestBasicDownloadLargeFile(t *testing.T) {
 
 	ctx := context.Background()
 	startTime := time.Now()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	duration := time.Since(startTime)
 
 	if err != nil {
-		t.Fatalf("basicDownload() error = %v", err)
+		t.Fatalf("BasicDownload() error = %v", err)
 	}
 
 	// Verify file size
@@ -276,7 +276,7 @@ func TestBasicDownloadInvalidURL(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err == nil {
 		t.Error("Expected error for invalid URL")
 	}
@@ -301,9 +301,9 @@ func TestBasicDownloadUserAgent(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	if err != nil {
-		t.Fatalf("basicDownload() error = %v", err)
+		t.Fatalf("BasicDownload() error = %v", err)
 	}
 
 	expectedUserAgent := "Mozilla/5.0 (compatible; ezft/1.0)"
@@ -390,11 +390,11 @@ func TestBasicDownloadRetry(t *testing.T) {
 
 	ctx := context.Background()
 	startTime := time.Now()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 	duration := time.Since(startTime)
 
 	if err != nil {
-		t.Fatalf("basicDownload() should succeed after retries, error = %v", err)
+		t.Fatalf("BasicDownload() should succeed after retries, error = %v", err)
 	}
 
 	// Verify file content
@@ -441,7 +441,7 @@ func TestBasicDownloadRetryExhausted(t *testing.T) {
 	client := NewClient(config)
 
 	ctx := context.Background()
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 
 	// Should fail after all retries are exhausted
 	if err == nil {
@@ -486,7 +486,7 @@ func TestBasicDownloadRetryContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
-	err := client.basicDownload(ctx)
+	err := client.BasicDownload(ctx)
 
 	// Should fail due to context cancellation
 	if err == nil {

@@ -98,7 +98,7 @@ func (c *Client) Download(ctx context.Context) error {
 
 	// Basic download, no concurrency, no resume support
 	fmt.Println("Starting whole file download")
-	return c.basicDownload(ctx)
+	return c.BasicDownload(ctx)
 }
 
 // getFileInfo gets file information

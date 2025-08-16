@@ -24,10 +24,8 @@ func (c *Client) getOptimalBufferSize() int64 {
 	return bufSize
 }
 
-// basicDownload downloads the entire file with performance optimizations
-func (c *Client) basicDownload(ctx context.Context) error {
-	log.Println("Starting whole file download")
-
+// BasicDownload downloads the entire file with performance optimizations
+func (c *Client) BasicDownload(ctx context.Context) error {
 	var lastErr error
 
 	// Retry mechanism
@@ -98,7 +96,7 @@ func (c *Client) performBasicDownload(ctx context.Context) error {
 	}()
 
 	// Copy data with optimized buffer size
-	written, err := c.copyWithOptimizedBuffer(ctx, bufferedWriter, resp.Body)
+	written, err := c.CopyWithOptimizedBuffer(ctx, bufferedWriter, resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
@@ -107,8 +105,8 @@ func (c *Client) performBasicDownload(ctx context.Context) error {
 	return nil
 }
 
-// copyWithOptimizedBuffer copies data with optimized buffer size
-func (c *Client) copyWithOptimizedBuffer(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+// CopyWithOptimizedBuffer copies data with optimized buffer size
+func (c *Client) CopyWithOptimizedBuffer(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
 	// Use unified buffer size for consistency
 	bufSize := c.getOptimalBufferSize()
 	buf := make([]byte, bufSize)
