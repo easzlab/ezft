@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestBasicDownload(t *testing.T) {
@@ -38,6 +40,7 @@ func TestBasicDownload(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -75,6 +78,7 @@ func TestBasicDownloadServerError(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -102,6 +106,7 @@ func TestBasicDownloadNotFound(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -127,6 +132,7 @@ func TestBasicDownloadContextCancellation(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	// Create context with short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
@@ -154,6 +160,7 @@ func TestBasicDownloadCreateDirectory(t *testing.T) {
 		OutputPath: nestedPath,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -201,6 +208,7 @@ func TestBasicDownloadOverwriteExisting(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err = client.BasicDownload(ctx)
@@ -241,6 +249,7 @@ func TestBasicDownloadLargeFile(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	startTime := time.Now()
@@ -257,12 +266,11 @@ func TestBasicDownloadLargeFile(t *testing.T) {
 		t.Fatalf("Failed to stat downloaded file: %v", err)
 	}
 
-	expectedSize := int64(len(largeContent))
-	if info.Size() != expectedSize {
-		t.Errorf("Downloaded file size mismatch. Expected %d, got %d", expectedSize, info.Size())
+	if info.Size() != int64(len(largeContent)) {
+		t.Errorf("Downloaded file size mismatch. Expected %d, got %d", len(largeContent), info.Size())
 	}
 
-	t.Logf("Downloaded %d bytes in %v", info.Size(), duration)
+	t.Logf("Downloaded 1MB file in %v", duration)
 }
 
 func TestBasicDownloadInvalidURL(t *testing.T) {
@@ -274,6 +282,7 @@ func TestBasicDownloadInvalidURL(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -299,6 +308,7 @@ func TestBasicDownloadUserAgent(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -352,6 +362,7 @@ func TestGetOptimalBufferSize(t *testing.T) {
 				ChunkSize: tt.chunkSize,
 			}
 			client := NewClient(config)
+			client.SetLogger(zap.NewNop()) // Add logger initialization
 
 			result := client.getOptimalBufferSize()
 			if result != tt.expectedResult {
@@ -387,6 +398,7 @@ func TestBasicDownloadRetry(t *testing.T) {
 		RetryCount: 3, // Allow 3 retries
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	startTime := time.Now()
@@ -439,6 +451,7 @@ func TestBasicDownloadRetryExhausted(t *testing.T) {
 		RetryCount: 2, // Allow 2 retries
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.BasicDownload(ctx)
@@ -481,6 +494,7 @@ func TestBasicDownloadRetryContextCancellation(t *testing.T) {
 		RetryCount: 5, // Allow many retries
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	// Create context with short timeout to cancel during retry
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)

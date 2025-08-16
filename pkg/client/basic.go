@@ -5,11 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // getOptimalBufferSize returns optimal buffer size based on chunk size configuration
@@ -31,7 +32,9 @@ func (c *Client) BasicDownload(ctx context.Context) error {
 	// Retry mechanism
 	for attempt := 0; attempt <= c.config.RetryCount; attempt++ {
 		if attempt > 0 {
-			log.Printf("Retry attempt %d/%d", attempt, c.config.RetryCount)
+			c.logger.Info("",
+				zap.String("msg", fmt.Sprintf("Retry attempt %d/%d", attempt, c.config.RetryCount)),
+			)
 			// Exponential backoff
 			backoff := time.Duration(attempt) * time.Second
 			select {
@@ -47,7 +50,10 @@ func (c *Client) BasicDownload(ctx context.Context) error {
 		}
 
 		lastErr = err
-		log.Printf("Download attempt %d failed: %v", attempt+1, err)
+		c.logger.Info("",
+			zap.String("msg", fmt.Sprintf("Download attempt %d failed", attempt+1)),
+			zap.Error(err),
+		)
 	}
 
 	return fmt.Errorf("download failed after %d attempts: %w", c.config.RetryCount+1, lastErr)
@@ -91,7 +97,10 @@ func (c *Client) performBasicDownload(ctx context.Context) error {
 	bufferedWriter := bufio.NewWriterSize(file, int(bufferSize))
 	defer func() {
 		if flushErr := bufferedWriter.Flush(); flushErr != nil {
-			log.Printf("Warning: failed to flush buffer: %v", flushErr)
+			c.logger.Error("",
+				zap.String("msg", "failed to flush buffer"),
+				zap.Error(flushErr),
+			)
 		}
 	}()
 
@@ -101,7 +110,9 @@ func (c *Client) performBasicDownload(ctx context.Context) error {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
-	log.Printf("Download completed: %d bytes written", written)
+	c.logger.Info("",
+		zap.String("msg", fmt.Sprintf("Download completed: %d bytes written", written)),
+	)
 	return nil
 }
 

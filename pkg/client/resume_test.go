@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"go.uber.org/zap"
 )
 
 func TestDownloadWithResume(t *testing.T) {
@@ -58,6 +60,7 @@ func TestDownloadWithResume(t *testing.T) {
 		EnableResume:      true,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.downloadWithResume(ctx, int64(len(fullContent)))
@@ -121,6 +124,7 @@ func TestDownloadWithResumePartialFile(t *testing.T) {
 		EnableResume:   true,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	ctx := context.Background()
 	err = client.downloadWithResume(ctx, int64(len(fullContent)))
@@ -180,6 +184,7 @@ func TestDownloadWithResumeFailedChunks(t *testing.T) {
 		EnableResume:      true,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	// Create partial file (missing the failed chunks)
 	partialContent := make([]byte, len(fullContent))
@@ -234,6 +239,7 @@ func TestDownloadChunksSequentially(t *testing.T) {
 		URL: server.URL + "/test.txt",
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	file, err := os.Create(testFile)
 	if err != nil {
@@ -294,6 +300,7 @@ func TestDownloadChunksSequentiallyWithFailure(t *testing.T) {
 		FailedChunksJason: failedChunksFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	// Verify config is set correctly
 	t.Logf("Client config FailedChunksJason: %s", client.config.FailedChunksJason)
@@ -362,6 +369,7 @@ func TestDownloadWithResumeCompleteFile(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	ctx := context.Background()
 	err = client.downloadWithResume(ctx, int64(len(testContent)))
@@ -418,6 +426,7 @@ func TestDownloadWithResumeCreateDirectory(t *testing.T) {
 		MaxConcurrency: 1,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop())
 
 	ctx := context.Background()
 	err := client.downloadWithResume(ctx, int64(len(testContent)))

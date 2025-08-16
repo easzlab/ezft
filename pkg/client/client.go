@@ -3,13 +3,14 @@ package client
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // DownloadConfig download configuration
@@ -39,6 +40,7 @@ func DefaultConfig() *DownloadConfig {
 type Client struct {
 	config     *DownloadConfig
 	httpClient *http.Client
+	logger     *zap.Logger
 }
 
 // NewClient creates a new download client
@@ -68,6 +70,10 @@ func NewClient(config *DownloadConfig) *Client {
 	}
 }
 
+func (c *Client) SetLogger(logger *zap.Logger) {
+	c.logger = logger
+}
+
 // Download executes download
 func (c *Client) Download(ctx context.Context) error {
 	// Get file information
@@ -75,7 +81,13 @@ func (c *Client) Download(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get file information: %w", err)
 	}
-	log.Printf("file size: %v, supportRange: %v", fileSize, supportsRange)
+
+	c.config.FileSize = fileSize
+	c.logger.Info("",
+		zap.String("msg", "retrieve file information"),
+		zap.Int64("fileSize", fileSize),
+		zap.Bool("supportRange", supportsRange),
+	)
 
 	// Check if partial download file already exists
 	existingSize, err := c.getExistingFileSize()
@@ -91,13 +103,11 @@ func (c *Client) Download(ctx context.Context) error {
 
 	// Determine download strategy
 	if supportsRange && c.config.EnableResume {
-		fmt.Println("Starting resume download")
 		// Support resume download, use chunked download
 		return c.downloadWithResume(ctx, fileSize)
 	}
 
 	// Basic download, no concurrency, no resume support
-	fmt.Println("Starting whole file download")
 	return c.BasicDownload(ctx)
 }
 
@@ -168,49 +178,4 @@ func (c *Client) getExistingFileSize() (int64, error) {
 		return 0, err
 	}
 	return info.Size(), nil
-}
-
-// GetProgress gets download progress
-func (c *Client) GetProgress() (float64, error) {
-	if c.config.FileSize == 0 {
-		// Get target file size
-		s, _, err := c.getFileInfo(context.Background())
-		if err != nil || s == 0 {
-			return 0, err
-		}
-		c.config.FileSize = s
-	}
-
-	// Get current downloaded size
-	currentSize, err := c.getExistingFileSize()
-	if err != nil {
-		return 0, err
-	}
-
-	return float64(currentSize) / float64(c.config.FileSize) * 100, nil
-}
-
-func (c *Client) ShowProgressLoop(ctx context.Context) {
-	time.Sleep(1 * time.Second)
-
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			progress, err := c.GetProgress()
-			if err != nil {
-				continue
-			}
-
-			// Simple progress bar display
-			barWidth := 50
-			filled := int(progress * float64(barWidth) / 100)
-			bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
-
-			fmt.Printf("\rDownload progress: [%s] %.1f%%", bar, progress)
-		}
-	}
 }

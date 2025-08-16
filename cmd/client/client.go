@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/easzlab/ezft/pkg/client"
+	"github.com/easzlab/ezft/pkg/utils"
+	"github.com/easzlab/ezft/pkg/utils/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -23,12 +25,16 @@ var (
 	clientResume       bool
 	clientAutoChunk    bool
 	clientShowProgress bool
+	clientLogHome      string
+	clientLogLevel     string
 )
 
 func init() {
 	// client subcommand parameters
 	ClientCmd.Flags().StringVarP(&clientURL, "url", "u", "", "Download URL (required)")
 	ClientCmd.Flags().StringVarP(&clientOutput, "output", "o", "", "Output file path")
+	ClientCmd.Flags().StringVarP(&clientLogHome, "log-home", "", "./logs", "Log file home")
+	ClientCmd.Flags().StringVarP(&clientLogLevel, "log-level", "", "debug", "Log level")
 	ClientCmd.Flags().Int64VarP(&clientChunkSize, "chunk-size", "s", 1024*1024, "Chunk size (bytes)")
 	ClientCmd.Flags().IntVarP(&clientConcurrency, "concurrency", "c", 1, "Concurrency count")
 	ClientCmd.Flags().IntVarP(&clientRetryCount, "retry", "r", 3, "Retry count")
@@ -50,6 +56,16 @@ var ClientCmd = &cobra.Command{
 			clientOutput = "down/" + urlParts[len(urlParts)-1]
 		}
 
+		if err := utils.EnsureDir(clientLogHome); err != nil {
+			return fmt.Errorf("failed to create log directory: %w", err)
+		}
+
+		// Create logger
+		l, err := logger.NewLogger(clientLogHome+"/client.log", clientLogLevel)
+		if err != nil {
+			return fmt.Errorf("failed to create logger: %w", err)
+		}
+
 		// Create download configuration
 		config := &client.DownloadConfig{
 			URL:            clientURL,
@@ -63,6 +79,7 @@ var ClientCmd = &cobra.Command{
 
 		// Create client
 		downloadClient := client.NewClient(config)
+		downloadClient.SetLogger(l)
 
 		// Set signal handling
 		ctx, cancel := context.WithCancel(context.Background())
@@ -85,21 +102,19 @@ var ClientCmd = &cobra.Command{
 		}
 
 		// Execute download
-		err := downloadClient.Download(ctx)
-		if err != nil {
+		if err := downloadClient.Download(ctx); err != nil {
 			return fmt.Errorf("download failed: %w", err)
 		}
 
 		duration := time.Since(startTime)
-		fmt.Printf("\n✓ Download completed! Duration: %v\n", duration)
 
 		// Display file information
 		if info, err := os.Stat(clientOutput); err == nil {
-			fmt.Printf("File size: %d bytes (%.2f MB)\n", info.Size(), float64(info.Size())/(1024*1024))
-			if duration > 0 {
-				speed := float64(info.Size()) / duration.Seconds() / (1024 * 1024)
-				fmt.Printf("Average speed: %.2f MB/s\n", speed)
-			}
+			fmt.Printf("\n✓ Download completed! Duration: %s File size: %s Average speed: %s\n",
+				utils.FormatDuration(duration),
+				utils.FormatBytes(info.Size()),
+				utils.CalculateSpeed(info.Size(), duration),
+			)
 		}
 
 		return nil

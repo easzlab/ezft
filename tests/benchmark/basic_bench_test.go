@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/easzlab/ezft/pkg/client"
+	"go.uber.org/zap"
 )
 
 // BenchmarkBasicDownload benchmarks basic download functionality
@@ -59,6 +60,7 @@ func benchmarkBasicDownloadSize(b *testing.B, size int) {
 			OutputPath: testFile,
 		}
 		cli := client.NewClient(config)
+		cli.SetLogger(zap.NewNop())
 
 		ctx := context.Background()
 		err := cli.BasicDownload(ctx)
@@ -123,6 +125,7 @@ func benchmarkCopyWithOptimizedBuffer(b *testing.B, size int, chunkSize int64) {
 		ChunkSize: chunkSize,
 	}
 	cli := client.NewClient(config)
+	cli.SetLogger(zap.NewNop())
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))

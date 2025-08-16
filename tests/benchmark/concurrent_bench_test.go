@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/easzlab/ezft/pkg/client"
+	"go.uber.org/zap"
 )
 
 // BenchmarkConcurrentDownload benchmarks concurrent download functionality
@@ -85,6 +86,7 @@ func benchmarkConcurrentDownloadSize(b *testing.B, size, concurrency int) {
 			AutoChunk:      false,
 		}
 		client := client.NewClient(config)
+		client.SetLogger(zap.NewNop())
 
 		ctx := context.Background()
 		err := client.Download(ctx)
@@ -164,6 +166,7 @@ func BenchmarkChunkSizeImpact(b *testing.B) {
 					AutoChunk:      false,
 				}
 				client := client.NewClient(config)
+				client.SetLogger(zap.NewNop())
 
 				ctx := context.Background()
 				err := client.Download(ctx)
@@ -221,6 +224,7 @@ func BenchmarkConcurrentVsBasicDownload(b *testing.B) {
 				EnableResume:   false,
 			}
 			client := client.NewClient(config)
+			client.SetLogger(zap.NewNop())
 
 			ctx := context.Background()
 			err := client.BasicDownload(ctx)
@@ -247,6 +251,7 @@ func BenchmarkConcurrentVsBasicDownload(b *testing.B) {
 				AutoChunk:      false,
 			}
 			client := client.NewClient(config)
+			client.SetLogger(zap.NewNop())
 
 			ctx := context.Background()
 			err := client.Download(ctx)
@@ -316,6 +321,7 @@ func BenchmarkMemoryUsage(b *testing.B) {
 					AutoChunk:      false,
 				}
 				client := client.NewClient(config)
+				client.SetLogger(zap.NewNop())
 
 				ctx := context.Background()
 				err := client.Download(ctx)

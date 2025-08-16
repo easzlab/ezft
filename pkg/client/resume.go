@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"go.uber.org/zap"
 )
 
 // downloadWithResume downloads using resume functionality
@@ -48,8 +50,13 @@ func (c *Client) downloadWithResume(ctx context.Context, fileSize int64) error {
 
 	chunks := c.calculateChunks(newExistingSize, fileSize)
 
-	fmt.Printf("Starting resume download, chunks: %d, downloaded: %d bytes, remaining: %d bytes\n",
-		len(chunks), newExistingSize, remainingSize)
+	c.logger.Info("",
+		zap.String("msg", "Starting resume download"),
+		zap.Int("chunks", len(chunks)),
+		zap.Int(("concurrent"), c.config.MaxConcurrency),
+		zap.Int64("downloaded", newExistingSize),
+		zap.Int64("remaining", remainingSize),
+	)
 
 	// Use sequential download for remaining chunks
 	if c.config.MaxConcurrency < 2 {
@@ -67,7 +74,10 @@ func (c *Client) downloadChunksSequentially(ctx context.Context, file *os.File, 
 			// Record failed chunk
 			if saveErr := c.saveFailedChunks([]Chunk{chunk}); saveErr != nil {
 				// Log the save error but still return the original download error
-				fmt.Printf("Warning: failed to save failed chunks: %v\n", saveErr)
+				c.logger.Info("",
+					zap.String("msg", "failed to save failed chunks"),
+					zap.Error(saveErr),
+				)
 			}
 			return err
 		}

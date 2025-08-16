@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestNewClient(t *testing.T) {
@@ -101,6 +103,7 @@ func TestGetFileInfo(t *testing.T) {
 		URL: server.URL + "/test.txt",
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	size, supportsRange, err := client.getFileInfo(ctx)
@@ -124,6 +127,7 @@ func TestGetFileInfoError(t *testing.T) {
 		URL: "http://invalid-url-that-does-not-exist.com/file.txt",
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	_, _, err := client.getFileInfo(ctx)
@@ -143,6 +147,7 @@ func TestGetExistingFileSize(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	size, err := client.getExistingFileSize()
 	if err != nil {
@@ -187,6 +192,7 @@ func TestGetProgress(t *testing.T) {
 		FileSize:   1000,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	// Test with no existing file
 	progress, err := client.GetProgress()
@@ -239,6 +245,7 @@ func TestDownloadBasic(t *testing.T) {
 		EnableResume: false,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err := client.Download(ctx)
@@ -275,6 +282,7 @@ func TestDownloadWithContext(t *testing.T) {
 		EnableResume: false,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	// Test with cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -316,6 +324,7 @@ func TestDownloadAlreadyComplete(t *testing.T) {
 		OutputPath: testFile,
 	}
 	client := NewClient(config)
+	client.SetLogger(zap.NewNop()) // Add logger initialization
 
 	ctx := context.Background()
 	err = client.Download(ctx)

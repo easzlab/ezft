@@ -35,7 +35,7 @@ func TestDownloadChunksConcurrently(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusPartialContent)
-		
+
 		// Return different content based on range
 		switch rangeHeader {
 		case "bytes=0-9":
@@ -115,7 +115,7 @@ func TestDownloadChunksConcurrentlyWithFailures(t *testing.T) {
 	failureCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rangeHeader := r.Header.Get("Range")
-		
+
 		// Fail specific chunks
 		if rangeHeader == "bytes=10-19" {
 			failureCount++
@@ -158,7 +158,7 @@ func TestDownloadChunksConcurrentlyWithFailures(t *testing.T) {
 
 	ctx := context.Background()
 	err = client.downloadChunksConcurrently(ctx, file, chunks)
-	
+
 	// Should return error due to failed chunk
 	if err == nil {
 		t.Error("Expected error due to failed chunk")
@@ -219,7 +219,7 @@ func TestDownloadChunksConcurrentlyContextCancellation(t *testing.T) {
 	defer cancel()
 
 	err = client.downloadChunksConcurrently(ctx, file, chunks)
-	
+
 	// Should return context error
 	if err == nil {
 		t.Error("Expected context cancellation error")

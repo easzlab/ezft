@@ -3,10 +3,9 @@ package server
 import (
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/easzlab/ezft/pkg/server"
+	"github.com/easzlab/ezft/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ var ServerCmd = &cobra.Command{
 	Long:  "EZFT server is a high-performance file download server that supports resume download, Range requests and multi-client concurrent downloads.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Check if root directory exists, create if it doesn't exist
-		if err := ensureDir(serverRootDir); err != nil {
+		if err := utils.EnsureDir(serverRootDir); err != nil {
 			log.Fatalf("Failed to create root directory: %v", err)
 		}
 
@@ -40,20 +39,4 @@ var ServerCmd = &cobra.Command{
 		}
 		return nil
 	},
-}
-
-func ensureDir(dir string) error {
-	absPath, err := filepath.Abs(dir)
-	if err != nil {
-		return err
-	}
-
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(absPath, 0755); err != nil {
-			return err
-		}
-		log.Printf("Created directory: %s", absPath)
-	}
-
-	return nil
 }

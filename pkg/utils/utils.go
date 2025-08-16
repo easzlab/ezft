@@ -100,9 +100,17 @@ func SanitizeFilename(filename string) string {
 
 // EnsureDir ensures directory exists, create if it doesn't exist
 func EnsureDir(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return os.MkdirAll(dir, 0755)
+	absPath, err := filepath.Abs(dir)
+	if err != nil {
+		return err
 	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(absPath, 0755); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
