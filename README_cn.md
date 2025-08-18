@@ -130,32 +130,7 @@ go install github.com/easzlab/ezft@latest
 ./ezft client --url http://example.com/file.zip --output file.zip
 ```
 
-## 架构
-
-### 项目结构
-```
-ezft/
-├── cmd/
-│   ├── main.go          # 主入口点
-│   ├── client/          # 客户端命令实现
-│   └── server/          # 服务端命令实现
-├── pkg/
-│   ├── client/          # 客户端核心功能
-│   │   ├── client.go    # 主要客户端逻辑
-│   │   ├── basic.go     # 基本下载
-│   │   ├── concurrent.go # 并发下载
-│   │   ├── resume.go    # 断点续传功能
-│   │   └── chunk.go     # 块管理
-│   ├── server/          # 服务端核心功能
-│   │   ├── server.go    # HTTP 服务器实现
-│   │   └── midware.go   # 日志中间件
-│   └── utils/           # 工具函数
-├── internal/
-│   └── config/          # 配置和版本管理
-└── tests/               # 测试文件
-```
-
-### 核心组件
+## 核心组件
 
 1. **CLI 框架**: 使用 Cobra 构建强大的命令行界面
 2. **HTTP 客户端**: 自定义 HTTP 客户端，具有超时和连接管理

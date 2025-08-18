@@ -10,12 +10,7 @@ import (
 // GetProgress gets download progress
 func (c *Client) GetProgress() (float64, error) {
 	if c.config.FileSize == 0 {
-		// Get target file size
-		s, _, err := c.getFileInfo(context.Background())
-		if err != nil || s == 0 {
-			return 0, err
-		}
-		c.config.FileSize = s
+		return 0, fmt.Errorf("file size is 0")
 	}
 
 	// Get current downloaded size
@@ -28,9 +23,7 @@ func (c *Client) GetProgress() (float64, error) {
 }
 
 func (c *Client) ShowProgressLoop(ctx context.Context) {
-	time.Sleep(1 * time.Second)
-
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {

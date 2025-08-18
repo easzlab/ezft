@@ -54,6 +54,7 @@ var ClientCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if clientOutput == "" {
 			urlParts := strings.Split(clientURL, "/")
+			// default output path is the last part of the URL
 			clientOutput = "down/" + urlParts[len(urlParts)-1]
 		}
 

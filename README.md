@@ -1,8 +1,10 @@
 # EZFT - Easy File Transfer
 
 [![Go Version](https://img.shields.io/badge/Go-1.24.4-blue.svg)](https://golang.org/)
-[![Version](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/easzlab/ezft)
+[![Go Report Card](https://goreportcard.com/badge/github.com/easzlab/ezft)](https://goreportcard.com/report/github.com/easzlab/ezft)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[README](README.md) | [中文文档](README_zh.md)
 
 EZFT (Easy File Transfer) is a high-performance file transfer tool written in Go that supports both client download and server functionality. It features concurrent downloads, resume capability, progress tracking, and efficient file serving.
 
@@ -130,32 +132,7 @@ Download files with high performance and resume capability:
 ./ezft client --url http://example.com/file.zip --output file.zip
 ```
 
-## Architecture
-
-### Project Structure
-```
-ezft/
-├── cmd/
-│   ├── main.go          # Main entry point
-│   ├── client/          # Client command implementation
-│   └── server/          # Server command implementation
-├── pkg/
-│   ├── client/          # Client core functionality
-│   │   ├── client.go    # Main client logic
-│   │   ├── basic.go     # Basic download
-│   │   ├── concurrent.go # Concurrent download
-│   │   ├── resume.go    # Resume functionality
-│   │   └── chunk.go     # Chunk management
-│   ├── server/          # Server core functionality
-│   │   ├── server.go    # HTTP server implementation
-│   │   └── midware.go   # Logging middleware
-│   └── utils/           # Utility functions
-├── internal/
-│   └── config/          # Configuration and version management
-└── tests/               # Test files
-```
-
-### Key Components
+## Key Components
 
 1. **CLI Framework**: Built with Cobra for robust command-line interface
 2. **HTTP Client**: Custom HTTP client with timeout and connection management

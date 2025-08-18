@@ -157,7 +157,7 @@ func (c *Client) getFileInfo(ctx context.Context) (int64, bool, error) {
 
 	resp2, err := c.httpClient.Do(req)
 	if err != nil {
-		return 0, false, fmt.Errorf("Range request failed: %w", err)
+		return 0, false, fmt.Errorf("range request failed: %w", err)
 	}
 	defer resp2.Body.Close()
 
