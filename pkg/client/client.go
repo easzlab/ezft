@@ -108,6 +108,7 @@ func (c *Client) Download(ctx context.Context) error {
 	}
 
 	// Basic download, no concurrency, no resume support
+	c.logger.Debug("", zap.String("msg", "Starting basic download"))
 	return c.BasicDownload(ctx)
 }
 

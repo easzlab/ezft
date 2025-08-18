@@ -50,7 +50,7 @@ func (c *Client) downloadWithResume(ctx context.Context, fileSize int64) error {
 
 	chunks := c.calculateChunks(newExistingSize, fileSize)
 
-	c.logger.Info("",
+	c.logger.Debug("",
 		zap.String("msg", "Starting resume download"),
 		zap.Int("chunks", len(chunks)),
 		zap.Int(("concurrent"), c.config.MaxConcurrency),

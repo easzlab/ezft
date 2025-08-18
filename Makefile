@@ -87,6 +87,12 @@ test-cov: ## run tests with coverage
 	$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "✓ Coverage report generated: coverage.html"
 
+.PHONY: e2e
+e2e: build ## run end-to-end tests
+	@echo "Running end-to-end tests..."
+	@bash tests/e2e_test.sh
+	@echo "✓ End-to-end tests completed"
+
 .PHONY: bench
 bench: ## run benchmarks
 	@echo "Running benchmarks..."
