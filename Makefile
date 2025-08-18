@@ -90,7 +90,9 @@ test-cov: ## run tests with coverage
 .PHONY: bench
 bench: ## run benchmarks
 	@echo "Running benchmarks..."
-	$(GO) test -bench=. -benchmem ./...
+	$(GO) test -bench=. -benchmem tests/benchmark/basic_bench_test.go
+	$(GO) test -bench=. -benchmem tests/benchmark/concurrent_bench_test.go
+	@echo "✓ Benchmarks completed"
 
 .PHONY: deps
 deps: ## download dependencies

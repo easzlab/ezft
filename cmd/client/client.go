@@ -13,6 +13,7 @@ import (
 	"github.com/easzlab/ezft/pkg/utils"
 	"github.com/easzlab/ezft/pkg/utils/logger"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // client subcommand related variables
@@ -114,6 +115,12 @@ var ClientCmd = &cobra.Command{
 				utils.FormatDuration(duration),
 				utils.FormatBytes(info.Size()),
 				utils.CalculateSpeed(info.Size(), duration),
+			)
+			l.Info("",
+				zap.String("msg", "Download completed"),
+				zap.String("duration", utils.FormatDuration(duration)),
+				zap.String("file_size", utils.FormatBytes(info.Size())),
+				zap.String("average_speed", utils.CalculateSpeed(info.Size(), duration)),
 			)
 		}
 

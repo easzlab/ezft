@@ -2,14 +2,16 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 // Server file download server
 type Server struct {
-	root string // File root directory
-	port int    // Service port
+	root   string // File root directory
+	port   int    // Service port
+	logger *zap.Logger
 }
 
 // NewServer creates a new file server
@@ -20,18 +22,26 @@ func NewServer(root string, port int) *Server {
 	}
 }
 
+func (s *Server) SetLogger(logger *zap.Logger) {
+	s.logger = logger
+}
+
 // Start starts the server
 func (s *Server) Start() error {
 	fs := http.FileServer(http.Dir(s.root))
 
-	handler := LoggingMiddleware(fs)
+	handler := s.LoggingMiddleware(fs)
 
 	// Create a new ServeMux to avoid conflicts with global DefaultServeMux
 	mux := http.NewServeMux()
 	mux.Handle("/", handler)
 
-	log.Printf("Serving %s on HTTP port %v\n", s.root, s.port)
-
 	addr := fmt.Sprintf(":%d", s.port)
+	s.logger.Info("",
+		zap.String("message", "Serving file server"),
+		zap.String("root", s.root),
+		zap.String("addr", addr),
+	)
+
 	return http.ListenAndServe(addr, mux)
 }

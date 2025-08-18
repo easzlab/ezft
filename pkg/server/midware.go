@@ -1,9 +1,10 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // responseWriter wraps the original ResponseWriter to capture response information
@@ -25,7 +26,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 }
 
 // Logging middleware
-func LoggingMiddleware(next http.Handler) http.Handler {
+func (s *Server) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -49,23 +50,23 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Log detailed information
-		log.Printf("[%s] %s %s %s - Status: %d - ReqSize: %d bytes - RespSize: %d bytes - Duration: %v - UserAgent: %q - Referer: %q",
-			start.Format("2006-01-02 15:04:05"),
-			r.RemoteAddr,
-			r.Method,
-			r.URL.RequestURI(), // Use RequestURI to include query parameters
-			rw.statusCode,
-			contentLength,
-			rw.responseSize,
-			duration,
-			userAgent,
-			referer,
+		s.logger.Info("",
+			zap.String("time", start.Format("2006-01-02 15:04:05")),
+			zap.String("remoteAddr", r.RemoteAddr),
+			zap.String("method", r.Method),
+			zap.String("url", r.URL.RequestURI()), // Use RequestURI to include query parameters
+			zap.Int("statusCode", rw.statusCode),
+			zap.Int64("reqSize", contentLength),
+			zap.Int64("respSize", rw.responseSize),
+			zap.Duration("duration", duration),
+			zap.String("userAgent", userAgent),
+			zap.String("referer", referer),
 		)
 	})
 }
 
 // Authentication middleware
-func AuthMiddleware(next http.Handler) http.Handler {
+func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get Basic Auth credentials from request headers
 		username, password, ok := r.BasicAuth()
@@ -73,12 +74,18 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			// If no authentication information is provided, require authentication
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			s.logger.Warn("Unauthorized request",
+				zap.String("remoteAddr", r.RemoteAddr),
+				zap.String("url", r.URL.RequestURI()))
 			return
 		}
 
 		// Check username and password (hardcoded here, should be retrieved from secure storage in production)
 		if username != "admin" || password != "password" {
 			http.Error(w, "Forbidden", http.StatusForbidden)
+			s.logger.Warn("Invalid credentials",
+				zap.String("remoteAddr", r.RemoteAddr),
+				zap.String("url", r.URL.RequestURI()))
 			return
 		}
 

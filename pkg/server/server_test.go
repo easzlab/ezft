@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestNewServer(t *testing.T) {
@@ -67,6 +69,7 @@ func TestServer_Start(t *testing.T) {
 	port := findAvailablePort(t)
 
 	server := NewServer(tempDir, port)
+	server.SetLogger(zap.NewNop())
 
 	// Start server in goroutine
 	serverErr := make(chan error, 1)
@@ -128,6 +131,7 @@ func TestServer_StartInvalidPort(t *testing.T) {
 
 	// Test with invalid port (negative)
 	server := NewServer(tempDir, -1)
+	server.SetLogger(zap.NewNop())
 
 	err := server.Start()
 	if err == nil {
@@ -141,6 +145,7 @@ func TestServer_StartPortInUse(t *testing.T) {
 
 	// Start first server
 	server1 := NewServer(tempDir, port)
+	server1.SetLogger(zap.NewNop())
 	go func() {
 		server1.Start()
 	}()
@@ -150,6 +155,7 @@ func TestServer_StartPortInUse(t *testing.T) {
 
 	// Try to start second server on same port
 	server2 := NewServer(tempDir, port)
+	server2.SetLogger(zap.NewNop())
 	err := server2.Start()
 
 	if err == nil {
@@ -163,6 +169,7 @@ func TestServer_StartNonExistentDirectory(t *testing.T) {
 	port := findAvailablePort(t)
 
 	server := NewServer(nonExistentDir, port)
+	server.SetLogger(zap.NewNop())
 
 	// Start server in goroutine
 	serverErr := make(chan error, 1)
@@ -206,6 +213,7 @@ func TestServer_StartWithSubdirectories(t *testing.T) {
 
 	port := findAvailablePort(t)
 	server := NewServer(tempDir, port)
+	server.SetLogger(zap.NewNop())
 
 	// Start server in goroutine
 	go func() {
@@ -250,6 +258,7 @@ func TestServer_StartWithMiddleware(t *testing.T) {
 
 	port := findAvailablePort(t)
 	server := NewServer(tempDir, port)
+	server.SetLogger(zap.NewNop())
 
 	// Start server in goroutine
 	go func() {
