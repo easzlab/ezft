@@ -40,7 +40,7 @@ var ServerCmd = &cobra.Command{
 		}
 
 		// Create logger
-		l, err := logger.NewLogger(serverLogHome+"/client.log", serverLogLevel)
+		l, err := logger.NewLogger(serverLogHome+"/server.log", serverLogLevel)
 		if err != nil {
 			return fmt.Errorf("failed to create logger: %w", err)
 		}

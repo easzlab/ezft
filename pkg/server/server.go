@@ -37,6 +37,7 @@ func (s *Server) Start() error {
 	mux.Handle("/", handler)
 
 	addr := fmt.Sprintf(":%d", s.port)
+	fmt.Printf("Serving file server at %s, root: %s\n", addr, s.root)
 	s.logger.Info("",
 		zap.String("message", "Serving file server"),
 		zap.String("root", s.root),

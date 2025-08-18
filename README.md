@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/easzlab/ezft)](https://goreportcard.com/report/github.com/easzlab/ezft)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[README](README.md) | [中文文档](README_zh.md)
+[README](README.md) | [中文文档](README_cn.md)
 
 EZFT (Easy File Transfer) is a high-performance file transfer tool written in Go that supports both client download and server functionality. It features concurrent downloads, resume capability, progress tracking, and efficient file serving.
 
