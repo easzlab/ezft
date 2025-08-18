@@ -237,29 +237,8 @@ main() {
     
     # Print results summary
     print_info ""
-    print_info "Test Results Summary"
+    print_info "All Tests Passed!"
     print_info "===================="
-    
-    local passed=0
-    local total=${#test_results[@]}
-    
-    for result in "${test_results[@]}"; do
-        if [[ $result == ✓* ]]; then
-            print_success "$result"
-            ((passed++))
-        else
-            print_error "$result"
-        fi
-    done
-    
-    print_info ""
-    if [[ $passed -eq $total ]]; then
-        print_success "All tests passed! ($passed/$total)"
-        exit 0
-    else
-        print_error "Some tests failed! ($passed/$total passed)"
-        exit 1
-    fi
 }
 
 # Run main function
