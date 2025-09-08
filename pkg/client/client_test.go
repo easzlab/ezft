@@ -122,14 +122,17 @@ func TestGetFileInfo(t *testing.T) {
 }
 
 func TestGetFileInfoError(t *testing.T) {
-	// Test with invalid URL
+	// Test with invalid URL - use a more reliable invalid URL that fails quickly
 	config := &DownloadConfig{
-		URL: "http://invalid-url-that-does-not-exist.com/file.txt",
+		URL: "http://127.0.0.1:1/nonexistent", // Use localhost with invalid port
 	}
 	client := NewClient(config)
 	client.SetLogger(zap.NewNop()) // Add logger initialization
 
-	ctx := context.Background()
+	// Use a shorter timeout context to ensure quick failure
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
 	_, _, err := client.getFileInfo(ctx)
 
 	if err == nil {
