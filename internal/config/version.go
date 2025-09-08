@@ -9,7 +9,7 @@ var (
 	BuildTime   string
 	BuildCommit string
 	BuildBranch string
-	Version     = "0.4.2"
+	Version     = "0.5.0"
 )
 
 func FullVersion() string {

@@ -1,7 +1,7 @@
 # EZFT - 简易文件传输工具
 
 [![Go Version](https://img.shields.io/badge/Go-1.24.4-blue.svg)](https://golang.org/)
-[![Version](https://img.shields.io/badge/version-0.2.2-green.svg)](https://github.com/easzlab/ezft)
+[![Go Report Card](https://goreportcard.com/badge/github.com/easzlab/ezft)](https://goreportcard.com/report/github.com/easzlab/ezft)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 EZFT (Easy File Transfer) 是一个用 Go 语言编写的高性能文件传输工具，支持客户端下载和服务端功能。具有并发下载、断点续传、进度跟踪和高效文件服务等特性。
